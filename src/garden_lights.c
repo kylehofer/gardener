@@ -34,6 +34,8 @@
 
 #define SLAVE_ID 2
 #define MAX_TIMEOUT CLOCKS_PER_SEC
+// This is a delay to prevent polling/writing at too high of a frequency
+// This is chosen purely from testing and hasn't yet been chosen by calculations
 #define EXECUTE_TIME CLOCKS_PER_SEC << 2
 #define LIGHT_HIGH 85
 
@@ -46,22 +48,21 @@ enum {
 uint16_t expected_light_command = 0;
 uint16_t read_light_command = 0;
 
-uint16_t execute_timestamp = 0;
+uint16_t poll_delay = 0;
 
 int garden_lights_process(modbus_t *modbus_context, clock_t timestamp)
 {
-    if (execute_timestamp > timestamp && (timestamp - execute_timestamp) < MAX_TIMEOUT)
+    if (poll_delay > timestamp && (timestamp - poll_delay) < MAX_TIMEOUT)
     {
         return 0;
     }
 
-    int ret;
-    
-    int slave_id;
+    int result;
 
-    ret = modbus_set_slave(modbus_context, SLAVE_ID);
+    result = modbus_set_slave(modbus_context, SLAVE_ID);
 
-    if(ret < 0) {
+    if(result < 0)
+    {
         return -1; // Set Slave Failed. TODO: Add DEBUG
     }
 
@@ -69,8 +70,8 @@ int garden_lights_process(modbus_t *modbus_context, clock_t timestamp)
     struct tm local_time = *localtime(&current_time);
 
     if ( // Make Time Range Configurable
-        (local_time.tm_hour > 18 || (local_time.tm_hour == 18 && local_time.tm_min >= 30)) && 
-        (local_time.tm_hour < 22 || (local_time.tm_hour == 22 && local_time.tm_min < 30))
+            (local_time.tm_hour > 18 || (local_time.tm_hour == 18 && local_time.tm_min >= 30)) && 
+            (local_time.tm_hour < 22 || (local_time.tm_hour == 22 && local_time.tm_min < 30))
         )
     {
         expected_light_command = LIGHT_HIGH;
@@ -82,9 +83,9 @@ int garden_lights_process(modbus_t *modbus_context, clock_t timestamp)
 
     if (expected_light_command != read_light_command)
     {
-        ret = modbus_write_register(modbus_context, LIGHT_COMMAND, expected_light_command);
-        execute_timestamp = clock() + EXECUTE_TIME;
-        if (ret < 0)
+        result = modbus_write_register(modbus_context, LIGHT_COMMAND, expected_light_command);
+        poll_delay = clock() + EXECUTE_TIME;
+        if (result < 0)
         {
             return -1; // Write Failed TODO: Add DEBUG
         }
@@ -93,9 +94,9 @@ int garden_lights_process(modbus_t *modbus_context, clock_t timestamp)
     {
         uint16_t slave_data[TOTAL_REGS_SIZE];
         
-        ret = modbus_read_registers(modbus_context, 0, TOTAL_REGS_SIZE, slave_data);
-        execute_timestamp = clock() + EXECUTE_TIME;
-        if (ret < 0)
+        result = modbus_read_registers(modbus_context, 0, TOTAL_REGS_SIZE, slave_data);
+        poll_delay = clock() + EXECUTE_TIME;
+        if (result < 0)
         {
             return -1; // Write Failed TODO: Add DEBUG
         }
