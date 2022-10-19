@@ -40,46 +40,28 @@
 #include <stdlib.h>
 
 #include "garden_lights.h"
+#include "victron.h"
 
 
 int main(int argc, char *argv[])
 {
-    int ret = 0;
-    modbus_t *modbus_context;
-    clock_t timestamp;
+    // if (garden_lights_init() < 0)
+    //     exit(EXIT_FAILURE);
     
-    if (argc < 2)
-    {
-        printf("Missing Serial Port Argument\n");
+    if (victron_init() < 0)
         exit(EXIT_FAILURE);
-    }
-
-    struct timeval response_timeout;
-    response_timeout.tv_sec = 0;
-    response_timeout.tv_usec = 500000;
-
-    modbus_context = modbus_new_rtu(argv[1], 38400, 'N', 8, 2);
-    if (modbus_context == NULL)
-    {
-        printf("Unable to create the modbus context for the port: %s. Error: %s\n", argv[1], strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-
-    modbus_set_response_timeout(modbus_context, &response_timeout);
-
-    ret = modbus_connect(modbus_context);
-    if(ret < 0)
-    {
-        printf("Error while trying to connect to port: %s. Error: %s\n", argv[1], strerror(errno));
-        exit(EXIT_FAILURE);
-    }
 
     for(;;)
     {
-        garden_lights_process(modbus_context, clock());
+        // garden_lights_process(clock());
+        victron_process(clock());
         usleep(50);
     }
+    return 0;
+}
 
-    modbus_close(modbus_context);
-    modbus_free(modbus_context);
+void exit(int status)
+{
+    // garden_lights_destroy();
+    victron_destroy();
 }

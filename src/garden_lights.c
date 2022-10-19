@@ -32,11 +32,17 @@
 #include "garden_lights.h"
 #include <errno.h>
 
+#define PORT "/dev/ttyO4"
+#define BAUD 38400
+#define DATA_BITS 8
+#define STOP_BITS 2
+#define PARITY 'N'
+
 #define SLAVE_ID 2
 #define MAX_TIMEOUT CLOCKS_PER_SEC
 // This is a delay to prevent polling/writing at too high of a frequency
 // This is chosen purely from testing and hasn't yet been chosen by calculations
-#define EXECUTE_TIME CLOCKS_PER_SEC << 2
+#define EXECUTE_TIME (CLOCKS_PER_SEC << 2)
 #define LIGHT_HIGH 85
 
 enum {
@@ -45,13 +51,45 @@ enum {
     TOTAL_REGS_SIZE
 };
 
+modbus_t *modbus_context = NULL;
+
 uint16_t expected_light_command = 0;
 uint16_t read_light_command = 0;
-
 uint16_t poll_delay = 0;
 
-int garden_lights_process(modbus_t *modbus_context, clock_t timestamp)
+
+int garden_lights_init()
 {
+    int result;
+    struct timeval response_timeout;
+    response_timeout.tv_sec = 0;
+    response_timeout.tv_usec = 500000;
+
+    modbus_context = modbus_new_rtu(PORT, BAUD, PARITY, DATA_BITS, STOP_BITS);
+    if (modbus_context == NULL)
+    {
+        printf("Unable to create the modbus context for the port: %s. Error: %s\n", PORT, strerror(errno));
+        return -1;
+    }
+
+    modbus_set_response_timeout(modbus_context, &response_timeout);
+
+    result = modbus_connect(modbus_context);
+    if(result < 0)
+    {
+        printf("Error while trying to connect to port: %s. Error: %s\n", PORT, strerror(errno));
+        return result;
+    }
+    return 0;
+}
+
+int garden_lights_process(clock_t timestamp)
+{
+    if (modbus_context == NULL)
+    {
+        return 0;
+    }
+
     if (poll_delay > timestamp && (timestamp - poll_delay) < MAX_TIMEOUT)
     {
         return 0;
@@ -104,4 +142,15 @@ int garden_lights_process(modbus_t *modbus_context, clock_t timestamp)
     }
 
     return 0;
+}
+
+void garden_lights_destroy()
+{
+    if (modbus_context == NULL)
+    {
+        return;
+    }
+
+    modbus_close(modbus_context);
+    modbus_free(modbus_context);
 }

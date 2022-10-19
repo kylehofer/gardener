@@ -1,5 +1,6 @@
 TARGET=gardener
 OUT_DIR=build
+INSTALL_DIR=/usr/bin
 
 PKGCONFIG = $(shell which pkg-config)
 
@@ -17,8 +18,6 @@ PTHREAD=-pthread
 SOURCES=$(wildcard src/*.c)
 OBJECTS=$(patsubst src/%.c, build/%.o, $(SOURCES))
 
-
-
 CCFLAGS=$(DEBUG) $(OPT) $(WARN) $(PTHREAD) -pipe
 
 # linker  -export-dynamic -lX11 -ljpeg  -L/usr/local/lib/
@@ -30,6 +29,9 @@ MKDIR_P = mkdir -p
 
 all: ${OUT_DIR} $(OBJECTS)
 	$(LD) -o $(OUT_DIR)/$(TARGET) $(OBJECTS) $(LDFLAGS) $(LFLAGS) $(LFLAGS) 
+
+install:
+	cp $(OUT_DIR)/$(TARGET) $(INSTALL_DIR)/$(TARGET)
 
 ${OUT_DIR}:
 	${MKDIR_P} ${OUT_DIR}

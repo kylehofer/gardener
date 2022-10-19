@@ -1,7 +1,7 @@
 /*
- * File: garden_lights.h
+ * File: victron.h
  * Project: gardener
- * Created Date: Sunday October 16th 2022
+ * Created Date: Monday October 17th 2022
  * Author: Kyle Hofer
  * 
  * MIT License
@@ -29,14 +29,13 @@
  * HISTORY:
  */
 
-#ifndef GARDEN_LIGHTS
-#define GARDEN_LIGHTS
+#ifndef VICTRON
+#define VICTRON
 
-#include <modbus.h>
-#include <time.h>
 
-int garden_lights_init();
-int garden_lights_process(clock_t timestamp);
-void garden_lights_destroy();
+int victron_init();
+int victron_process();
+void victron_destroy();
 
-#endif /* GARDEN_LIGHTS */
+
+#endif /* VICTRON */
