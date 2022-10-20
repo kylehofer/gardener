@@ -1,7 +1,7 @@
 /*
- * File: garden_lights.h
+ * File: ModbusServer.h
  * Project: gardener
- * Created Date: Sunday October 16th 2022
+ * Created Date: Thursday October 20th 2022
  * Author: Kyle Hofer
  * 
  * MIT License
@@ -29,14 +29,19 @@
  * HISTORY:
  */
 
-#ifndef GARDEN_LIGHTS
-#define GARDEN_LIGHTS
+#ifndef MODBUSSERVER
+#define MODBUSSERVER
 
-#include <modbus.h>
-#include <time.h>
+class ModbusServer
+{
+private:
 
-int garden_lights_init();
-int garden_lights_process(clock_t timestamp);
-void garden_lights_destroy();
+protected:
 
-#endif /* GARDEN_LIGHTS */
+public:
+    ModbusServer(const char *device, int baud, char parity, int data_bit, int stop_bit);
+    int connect();
+};
+
+
+#endif /* MODBUSSERVER */

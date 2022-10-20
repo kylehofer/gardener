@@ -51,7 +51,7 @@
 #define MAX_FIELD_LENGTH 8
 
 enum {
-    IDLE, LABEL, FIELD, CHEC, KSUM
+    IDLE, LABEL, FIELD//, CHEC, KSUM
 };
 
 // #define SUB_ID_TO_RAW(ID, i) (sizeof(ID) > (i + 1)) * (ID[i] << (i * 8))
@@ -62,7 +62,7 @@ enum {
 // #define TO_BINARY(C, I) (C << (I * 8))
 
 #define BUILD_RAW_ID(...) BUILD_RAW_ID_ARG(__VA_ARGS__, 0, 0, 0, 0)
-#define BUILD_RAW_ID_ARG(_1, _2, _3, _4, ...) (_1 + (_2 << 8) + (_3 << 16) + (_4 << 24))
+#define BUILD_RAW_ID_ARG(_1, _2, _3, _4, ...) ((_1) + ((_2) << 8) + ((_3) << 16) + ((_4) << 24))
 
 
 enum {
@@ -234,6 +234,7 @@ int victron_process()
     {
         process_buffer(buffer, bytes_read);
     }
+    return 0;
 }
 
 void victron_destroy()

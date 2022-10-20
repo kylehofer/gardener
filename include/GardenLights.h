@@ -1,7 +1,7 @@
 /*
- * File: main.c
+ * File: GardenLights.h
  * Project: gardener
- * Created Date: Sunday October 16th 2022
+ * Created Date: Thursday October 20th 2022
  * Author: Kyle Hofer
  * 
  * MIT License
@@ -29,39 +29,25 @@
  * HISTORY:
  */
 
-#include <stdio.h>
-#include <unistd.h>
-#include <modbus.h>
-#include <string.h>
-#include <errno.h>
-#include <sys/ioctl.h>
-#include <linux/serial.h>
-#include <asm/ioctls.h>
-#include <stdlib.h>
+#ifndef GARDENLIGHTS
+#define GARDENLIGHTS
 
-#include "garden_lights.h"
-#include "victron.h"
+#include "ModbusDevice.h"
+#include "Executor.h"
 
-
-int main(int argc, char *argv[])
+class GardenLights : ModbusDevice, Executor
 {
-    // if (garden_lights_init() < 0)
-    //     exit(EXIT_FAILURE);
-    
-    if (victron_init() < 0)
-        exit(EXIT_FAILURE);
+    private:
+        uint16_t expectedLightCommand;
+        uint16_t readLightCommand;
+    protected:
+        clock_t doExecute();
+    public:
+        GardenLights();
+        GardenLights(ModbusConnection* connection);
+        using ModbusDevice::setConnection;
+        using ModbusDevice::setSlaveId;
+        using Executor::execute;
+};
 
-    for(;;)
-    {
-        // garden_lights_process(clock());
-        victron_process(clock());
-        usleep(50);
-    }
-    return 0;
-}
-
-void exit(int status)
-{
-    // garden_lights_destroy();
-    victron_destroy();
-}
+#endif /* GARDENLIGHTS */
