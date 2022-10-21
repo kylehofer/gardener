@@ -36,7 +36,7 @@
 
 /**
  * @brief 
- * c
+ * 
  */
 class ModbusConnection
 {

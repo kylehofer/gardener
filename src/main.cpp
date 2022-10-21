@@ -32,41 +32,53 @@
 #include <ctime>
 #include <cstdlib>
 
-// #include <cstdlib>
+#include <termios.h>
 #include <unistd.h>
 
 
 #include "GardenLights.h"
 #include "ModbusConnection.h"
-// #include "victron.h"
+#include "VictronSerial.h"
 
-#define PORT "/dev/ttyO4"
-#define BAUD 38400
-#define DATA_BITS 8
-#define STOP_BITS 2
-#define PARITY 'N'
+#define MODBUS_PORT "/dev/ttyO4"
+#define MODBUS_BAUD 38400
+#define MODBUS_DATA_BITS 8
+#define MODBUS_STOP_BITS 2
+#define MODBUS_PARITY 'N'
+
+#define VICTRON_PORT "/dev/ttyO5"
+#define VICTRON_BAUD B19200
+#define VICTRON_DATA_BITS 8
+#define VICTRON_STOP_BITS 1
+#define VICTRON_PARITY 'N'
 
 
 int main(int argc, char *argv[])
 {
-    ModbusConnection connection;
-    connection = ModbusConnection();
+    ModbusConnection modbusConnection = ModbusConnection();
+    VictronSerial victronSerial = VictronSerial();
 
-    if (connection.configure(PORT, BAUD, PARITY, DATA_BITS, STOP_BITS) != 0)
+    if (modbusConnection.configure(MODBUS_PORT, MODBUS_BAUD, MODBUS_PARITY, MODBUS_DATA_BITS, MODBUS_STOP_BITS) != 0)
     {
         exit(EXIT_FAILURE);
     }
 
-    if (connection.connect() != 0)
+    if (modbusConnection.connect() != 0)
     {
         exit(EXIT_FAILURE);
     }
 
-    GardenLights gardenLights = GardenLights(&connection);
+    GardenLights gardenLights = GardenLights(&modbusConnection);
+
+    if (victronSerial.initialize(VICTRON_PORT, VICTRON_BAUD, VICTRON_PARITY, VICTRON_DATA_BITS, VICTRON_STOP_BITS))
+    {
+        exit(EXIT_FAILURE);
+    }
     
     for(;;)
     {
         gardenLights.execute();
+        victronSerial.execute();
         usleep(50);
     }
     return 0;

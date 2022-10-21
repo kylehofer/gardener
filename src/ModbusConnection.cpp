@@ -39,17 +39,17 @@ ModbusConnection::ModbusConnection() : connected(false), modbusContext(NULL) { }
 
 ModbusConnection::~ModbusConnection() 
 {
-    if (this->modbusContext == NULL)
+    if (modbusContext == NULL)
     {
         return;
     }
     
-    if (this->connected)
+    if (connected)
     {
-        this->disconnect();
+        disconnect();
     }
 
-    modbus_free(this->modbusContext);
+    modbus_free(modbusContext);
 }
 
 int ModbusConnection::configure(const char *port, int baud, char parity, int data_bit, int stop_bit)
@@ -102,7 +102,7 @@ int ModbusConnection::setSlaveId(int slaveId)
 {
     int result;
 
-    if (slaveId != this->slaveId)
+    if (this->slaveId != slaveId)
     {
         result = modbus_set_slave(modbusContext, slaveId);
         if(result < 0)
@@ -117,16 +117,16 @@ int ModbusConnection::setSlaveId(int slaveId)
 
 int ModbusConnection::read(int slaveId, int address, int size, uint16_t* value)
 {
-    return this->setSlaveId(slaveId) || modbus_read_registers(modbusContext, 0, size, value);
+    return setSlaveId(slaveId) || modbus_read_registers(modbusContext, 0, size, value);
 }
 
 int ModbusConnection::write(int slaveId, int address, uint16_t value)
 {
-    return this->setSlaveId(slaveId) || modbus_write_register(modbusContext, address, value);
+    return setSlaveId(slaveId) || modbus_write_register(modbusContext, address, value);
 }
 
 int ModbusConnection::write(int slaveId, int address, int size, uint16_t* data)
 {
-    return this->setSlaveId(slaveId) || modbus_write_registers(modbusContext, address, size, data);
+    return setSlaveId(slaveId) || modbus_write_registers(modbusContext, address, size, data);
 }
 

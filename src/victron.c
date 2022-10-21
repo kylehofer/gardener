@@ -48,7 +48,7 @@
 #define END_CHARACTER '\r'
 #define SPLIT_CHARACTER '\t'
 #define ASYNC_CHARACTER ':'
-#define MAX_FIELD_LENGTH 8
+#define MAX_LABEL_LENGTH 8
 
 enum {
     IDLE, LABEL, FIELD//, CHEC, KSUM
@@ -91,7 +91,7 @@ enum {
 
 // Union used for converting door data to a buffer for transmissions
 typedef union {
-    char buffer[MAX_FIELD_LENGTH];
+    char buffer[MAX_LABEL_LENGTH];
     struct {
         uint32_t lower;
         uint32_t upper;
@@ -196,8 +196,8 @@ void process_buffer(char *buffer, int size)
                 if (input == END_CHARACTER)
                 {
                     state = LABEL;
-                    memset(label.buffer, 0, MAX_FIELD_LENGTH);
-                    label_index = MAX_FIELD_LENGTH;
+                    memset(label.buffer, 0, MAX_LABEL_LENGTH);
+                    label_index = MAX_LABEL_LENGTH;
                 }
                 else
                 {
@@ -208,8 +208,8 @@ void process_buffer(char *buffer, int size)
                 if (input == START_CHARACTER)
                 {
                     state = LABEL;
-                    memset(label.buffer, 0, MAX_FIELD_LENGTH);
-                    label_index = MAX_FIELD_LENGTH;
+                    memset(label.buffer, 0, MAX_LABEL_LENGTH);
+                    label_index = MAX_LABEL_LENGTH;
                 }
                 break;
             default:
