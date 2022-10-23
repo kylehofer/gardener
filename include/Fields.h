@@ -57,13 +57,14 @@ public:
      * 
      * @return int 
      */
-    int getId() { return id; };
+    uint32_t getId() { return id; };
     /**
      * @brief Get the Data object
      * 
      * @param data Pointer to memory address to load the data into
      */
     virtual void getData(void* data) = 0;
+    virtual void* getData() = 0;
 };
 
 class StringField : Field
@@ -80,6 +81,7 @@ public:
     StringField(uint32_t id, std::string data) : Field(id), data(data) {};
     ~StringField() {};
     void getData(void* data) { *((std::string*) data) = this->data; };
+    void* getData() { return &this->data; };
 };
 
 class DoubleField : Field
@@ -96,6 +98,7 @@ public:
     DoubleField(uint32_t id, double data) : Field(id), data(data) {};
     ~DoubleField() {};
     void getData(void* data) { *((double*) data) = this->data; };
+    void* getData() { return &this->data; };
 };
 
 class FloatField : Field
@@ -112,6 +115,7 @@ public:
     FloatField(uint32_t id, float data) : Field(id), data(data) {};
     ~FloatField() {};
     void getData(void* data) { *((float*) data) = this->data; };
+    void* getData() { return &this->data; };
 };
 
 class UInt32Field : Field
@@ -128,6 +132,7 @@ public:
     UInt32Field(uint32_t id, uint32_t data) : Field(id), data(data) {};
     ~UInt32Field() {};
     void getData(void* data) { *((uint32_t*) data) = this->data; };
+    void* getData() { return &this->data; };
 };
 
 class Int32Field : Field
@@ -144,6 +149,7 @@ public:
     Int32Field(uint32_t id, int32_t data) : Field(id), data(data) {};
     ~Int32Field() {};
     void getData(void* data) { *((int32_t*) data) = this->data; };
+    void* getData() { return &this->data; };
 };
 
 class UInt16Field : Field
@@ -160,6 +166,7 @@ public:
     UInt16Field(uint32_t id, uint16_t data) : Field(id), data(data) {};
     ~UInt16Field() {};
     void getData(void* data) { *((uint16_t*) data) = this->data; };
+    void* getData() { return &this->data; };
 };
 
 class Int16Field : Field
@@ -175,7 +182,8 @@ public:
      */
     Int16Field(uint32_t id, int16_t data) : Field(id), data(data) {};
     ~Int16Field() {};
-    void getData(void* data) { *((uint16_t*) data) = this->data; };
+    void getData(void* data) { *((int16_t*) data) = this->data; };
+    void* getData() { return &this->data; };
 };
 
 class UInt8Field : Field
@@ -192,6 +200,7 @@ public:
     UInt8Field(uint32_t id, uint8_t data) : Field(id), data(data) {};
     ~UInt8Field() {};
     void getData(void* data) { *((uint8_t*) data) = this->data; };
+    void* getData() { return &this->data; };
 };
 
 class Int8Field : Field
@@ -207,7 +216,8 @@ public:
      */
     Int8Field(uint32_t id, int8_t data) : Field(id), data(data) {};
     ~Int8Field() {};
-    void getData(void* data) { *((uint8_t*) data) = this->data; };
+    void getData(void* data) { *((int8_t*) data) = this->data; };
+    void* getData() { return &this->data; };
 };
 
 #endif /* FIELDS */

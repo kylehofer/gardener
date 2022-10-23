@@ -60,7 +60,7 @@ public:
         clock_t timestamp;
 
         timestamp = clock();
-        if (this->executeDelay < timestamp || (this->executeDelay - timestamp) > MAX_TIMEOUT)
+        if (0 && (this->executeDelay < timestamp || (this->executeDelay - timestamp) > MAX_TIMEOUT))
         {
             return;
         }

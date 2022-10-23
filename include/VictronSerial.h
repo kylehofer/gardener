@@ -42,14 +42,53 @@
 // Max length of a Victron Field Value
 #define MAX_FIELD_LENGTH 32
 
+// Convert a set of characters into a unique binary ID
+#define BUILD_RAW_ID(...) BUILD_RAW_ID_ARG(__VA_ARGS__, 0, 0, 0, 0)
+#define BUILD_RAW_ID_ARG(_1, _2, _3, _4, ...) ((_1) + ((_2) << 8) + ((_3) << 16) + ((_4) << 24))
+
+// Field Label Identifiers. We convert 
+enum {
+    VOLTAGE = 'V',
+    CURRENT = 'I',
+    PANEL_VOLTAGE = BUILD_RAW_ID('V', 'P', 'V'),
+    PANEL_POWER = BUILD_RAW_ID('P', 'P', 'V'),
+    LOAD_CURRENT = BUILD_RAW_ID('I', 'L'),
+    OPERATION_STATE = BUILD_RAW_ID('C', 'S'),
+    ERROR_STATE = BUILD_RAW_ID('E', 'R', 'R'),
+    LOAD = BUILD_RAW_ID('L', 'O', 'A', 'D'),
+    YIELD_TOTAL = BUILD_RAW_ID('H', '1', '9'),
+    YIELD_TODAY = BUILD_RAW_ID('H', '2', '0'),
+    MAX_POWER_TODAY = BUILD_RAW_ID('H', '2', '1'),
+    YIELD_YESTERDAY = BUILD_RAW_ID('H', '2', '2'),
+    MAX_POWER_YESTERDAY = BUILD_RAW_ID('H', '2', '3'),
+    PRODUCT_ID = BUILD_RAW_ID('P', 'I', 'D'),
+    FIRMWARE = BUILD_RAW_ID('F', 'W'),
+    SERIAL = BUILD_RAW_ID('S', 'E', 'R', '#'),
+    TRACKER_OPERATION_MODE = BUILD_RAW_ID('M', 'P', 'P', 'T'),
+    OFF_REASON = BUILD_RAW_ID('O', 'R'),
+    DAY_SEQUENCE = BUILD_RAW_ID('H', 'S', 'D', 'S'),
+    CHEC = BUILD_RAW_ID('C', 'h', 'e', 'c'),
+    KSUM = BUILD_RAW_ID('k', 's', 'u', 'm')
+};
+
 // Used to convert Field labels to binary values for fast comparisons
 typedef union {
-    char buffer[MAX_LABEL_LENGTH];
+    unsigned char buffer[MAX_LABEL_LENGTH];
     struct {
-        uint32_t upper;
         uint32_t lower;
+        uint32_t upper;        
     }; 
 } LabelToBuffer_u;
+
+class VictronDataHandler
+{
+private:
+protected:
+public:
+    VictronDataHandler() {};
+    virtual ~VictronDataHandler() {};
+    virtual void fieldsUpdate(std::queue<Field*>* fields) = 0;
+};
 
 class VictronSerial : Executor
 {
@@ -61,8 +100,9 @@ private:
     int labelIndex;
     char fieldData[MAX_FIELD_LENGTH];
     int fieldIndex;
-    uint8_t checksum;
+    int8_t checksum;
     std::queue<Field*> fields;
+    VictronDataHandler* dataHandler;
 
     /**
      * @brief Process a buffer read from the victron serial
@@ -101,6 +141,7 @@ protected:
 
 public:
     VictronSerial();
+    VictronSerial(VictronDataHandler* dataHandler);
     ~VictronSerial();
     using Executor::execute;
 
