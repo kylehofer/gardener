@@ -5,6 +5,8 @@
 #include "gtest/gtest.h"
 #include "VictronSerial.h"
 
+#define TEST_INPUT_1 "\r\nPID	0xA053\r\nFW	159\r\nSER#	HQ21094NFGX\r\nV	22930\r\nI	-50\r\nVPV	41200\r\nPPV	8\r\nCS	3\r\nMPPT	2\r\nOR	0x00000000\r\nERR	0\r\nLOAD	ON\r\nIL	400\r\nH19	2679\r\nH20	1\r\nH21	14\r\nH22	18\r\nH23	79\r\nHSDS	297\r\nChecksum		\r\n"
+
 typedef struct _ExpectedValues
 {
     int32_t test32int;
@@ -27,104 +29,94 @@ typedef struct _ExpectedValues
     int8_t errorState;
     int8_t trackerOperationMode;
     int8_t load;
-    std::string productId;
-    std::string firmware;
-    std::string serial;
+    const char* productId;
+    const char* firmware;
+    const char* serial;
 } ExpectedValues;
 
-class TestHandler : VictronDataHandler
+class TestHandler : VictronFieldHandler
 {
 private:
     ExpectedValues expectedValues;
-    bool processed;
+    int count;
 protected:
 public:
-    TestHandler() : processed(0) {};
+    TestHandler() : count(0) {};
     ~TestHandler() {};
     void setExpectedValues(ExpectedValues expectedValues)
     {
         this->expectedValues = expectedValues; 
     }
 
-    bool didProcess()
+    int getCount()
     {
-        return processed;
+        return count;
     }
 
-    void fieldsUpdate(std::queue<Field*>* fields)
+    void fieldUpdate(uint32_t id, void* data, size_t size)
     {
-        processed = true;
-        Field* field;
-        // Clear Queue
-        while (!fields->empty()) 
+        count++;
+        switch (id)
         {
-            field = fields->front();
-            fields->pop();
-
-            switch (field->getId())
-            {
-                case VOLTAGE:
-                    EXPECT_EQ(*((int32_t*)field->getData()), expectedValues.voltage);
-                    break;
-                case PANEL_VOLTAGE:
-                    EXPECT_EQ(*((int32_t*)field->getData()), expectedValues.panelVoltage);
-                    break;
-                case CURRENT:
-                    EXPECT_EQ(*((int16_t*)field->getData()), expectedValues.current);
-                    break;
-                case PANEL_POWER:
-                    EXPECT_EQ(*((int16_t*)field->getData()), expectedValues.panelPower);
-                    break;
-                case LOAD_CURRENT:
-                    EXPECT_EQ(*((int16_t*)field->getData()), expectedValues.loadCurrent);
-                    break;
-                case YIELD_TOTAL:
-                    EXPECT_EQ(*((int16_t*)field->getData()), expectedValues.yieldTotal);
-                    break;
-                case YIELD_TODAY:
-                    EXPECT_EQ(*((int16_t*)field->getData()), expectedValues.yieldToday);
-                    break;
-                case MAX_POWER_TODAY:
-                    EXPECT_EQ(*((int16_t*)field->getData()), expectedValues.maxPowerToday);
-                    break;
-                case YIELD_YESTERDAY:
-                    EXPECT_EQ(*((int16_t*)field->getData()), expectedValues.yieldYesterday);
-                    break;
-                case MAX_POWER_YESTERDAY:
-                    EXPECT_EQ(*((int16_t*)field->getData()), expectedValues.maxPowerYesterday);
-                    break;
-                case DAY_SEQUENCE:
-                    EXPECT_EQ(*((int16_t*)field->getData()), expectedValues.daySequence);
-                    break;
-                case OPERATION_STATE:
-                    EXPECT_EQ(*((int8_t*)field->getData()), expectedValues.operationState);
-                    break;
-                case ERROR_STATE:
-                    EXPECT_EQ(*((int8_t*)field->getData()), expectedValues.errorState);
-                    break;
-                case TRACKER_OPERATION_MODE:
-                    EXPECT_EQ(*((int8_t*)field->getData()), expectedValues.trackerOperationMode);
-                    break;
-                case PRODUCT_ID:
-                    EXPECT_EQ(*((std::string*)field->getData()), expectedValues.productId);
-                    break;
-                case FIRMWARE:
-                    EXPECT_EQ(*((std::string*)field->getData()), expectedValues.firmware);
-                    break;
-                case SERIAL:
-                    EXPECT_EQ(*((std::string*)field->getData()), expectedValues.serial);
-                    break;
-                case LOAD: // ON/OFF value
-                    EXPECT_EQ(*((int8_t*)field->getData()), expectedValues.load);
-                    break;
-                case OFF_REASON:
-                default:
-                    break;
-            }
-            delete field;
+            case VOLTAGE:
+                EXPECT_EQ(*((int32_t*) data), expectedValues.voltage);
+                break;
+            case PANEL_VOLTAGE:
+                EXPECT_EQ(*((int32_t*) data), expectedValues.panelVoltage);
+                break;
+            case CURRENT:
+                EXPECT_EQ(*((int16_t*) data), expectedValues.current);
+                break;
+            case PANEL_POWER:
+                EXPECT_EQ(*((int16_t*) data), expectedValues.panelPower);
+                break;
+            case LOAD_CURRENT:
+                EXPECT_EQ(*((int16_t*) data), expectedValues.loadCurrent);
+                break;
+            case YIELD_TOTAL:
+                EXPECT_EQ(*((int16_t*) data), expectedValues.yieldTotal);
+                break;
+            case YIELD_TODAY:
+                EXPECT_EQ(*((int16_t*) data), expectedValues.yieldToday);
+                break;
+            case MAX_POWER_TODAY:
+                EXPECT_EQ(*((int16_t*) data), expectedValues.maxPowerToday);
+                break;
+            case YIELD_YESTERDAY:
+                EXPECT_EQ(*((int16_t*) data), expectedValues.yieldYesterday);
+                break;
+            case MAX_POWER_YESTERDAY:
+                EXPECT_EQ(*((int16_t*) data), expectedValues.maxPowerYesterday);
+                break;
+            case DAY_SEQUENCE:
+                EXPECT_EQ(*((int16_t*) data), expectedValues.daySequence);
+                break;
+            case OPERATION_STATE:
+                EXPECT_EQ(*((int8_t*) data), expectedValues.operationState);
+                break;
+            case ERROR_STATE:
+                EXPECT_EQ(*((int8_t*) data), expectedValues.errorState);
+                break;
+            case TRACKER_OPERATION_MODE:
+                EXPECT_EQ(*((int8_t*) data), expectedValues.trackerOperationMode);
+                break;
+            case PRODUCT_ID:
+                ASSERT_STREQ((char*) data, expectedValues.productId) << "The Product ID " << ((char*) data) << " did not match " << expectedValues.productId;
+                break;
+            case FIRMWARE:
+                ASSERT_STREQ((char*) data, expectedValues.firmware) << "The Firmware " << ((char*) data) << " did not match " << expectedValues.firmware;
+                break;
+            case SERIAL:
+                ASSERT_STREQ((char*) data, expectedValues.serial) << "The Serial " << ((char*) data) << " did not match " << expectedValues.serial;
+                break;
+            case LOAD: // ON/OFF value
+                EXPECT_EQ(*((bool*) data), expectedValues.load);
+                break;
+            case OFF_REASON:
+            default:
+                break;
         }
-    
-    };
+    }
 };
 
 class MockVictronSerial : VictronSerial
@@ -133,7 +125,7 @@ class MockVictronSerial : VictronSerial
         using VictronSerial::doExecute;
     public:
         MockVictronSerial() : VictronSerial() {};
-        MockVictronSerial(VictronDataHandler* dataHandler) : VictronSerial(dataHandler) {};
+        MockVictronSerial(VictronFieldHandler* dataHandler) : VictronSerial(dataHandler) {};
         clock_t execute()
         {
             return doExecute();

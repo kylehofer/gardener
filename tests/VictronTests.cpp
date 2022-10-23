@@ -11,7 +11,6 @@
 #include <termios.h>
 
 #include "VictronTests.h"
-
 #include "utils.h"
 
 #define TIMEOUT 10000
@@ -65,7 +64,7 @@ TEST(VictronSerial, TestSerialPayload) {
     }
 
     handler = new TestHandler();
-    victronSerial = VictronSerial((VictronDataHandler *) handler);
+    victronSerial = VictronSerial((VictronFieldHandler *) handler);
 
     if (victronSerial.initialize(OUTPUT_PORT.c_str(), VICTRON_BAUD, VICTRON_PARITY, VICTRON_DATA_BITS, VICTRON_STOP_BITS))
     {
@@ -81,17 +80,7 @@ TEST(VictronSerial, TestSerialPayload) {
         exit(EXIT_FAILURE);
     }
 
-    // read entire file into string
-    if(std::ifstream is{"./test_input", std::ios::binary | std::ios::ate}) {
-        auto size = is.tellg();
-        std::string str(size, '\0'); // construct string to stream size
-        is.seekg(0);
-        if(is.read(&str[0], size))
-        {
-            std::cout << str << '\n';
-            write(inPort, str.c_str(), size);
-        } 
-    }
+    write(inPort, TEST_INPUT_1, sizeof(TEST_INPUT_1));
 
     handler->setExpectedValues({
         .voltage = 22930,
@@ -116,7 +105,7 @@ TEST(VictronSerial, TestSerialPayload) {
 
     victronSerial.execute();
 
-    EXPECT_EQ(handler->didProcess(), 1);
+    EXPECT_EQ(handler->getCount(), 18);
 
     system("killall socat");
 

@@ -57,8 +57,8 @@ enum {
     IDLE, LABEL, FIELD, ASYNC, CHECKSUM
 };
 
-VictronSerial::VictronSerial() : Executor(), initialized(false), serialPort(-1), dataHandler(NULL) { }
-VictronSerial::VictronSerial(VictronDataHandler* dataHandler) : Executor(), initialized(false), serialPort(-1), dataHandler(dataHandler) { }
+VictronSerial::VictronSerial() : Executor(), initialized(false), serialPort(-1), fieldHandler(NULL) { }
+VictronSerial::VictronSerial(VictronFieldHandler* fieldHandler) : Executor(), initialized(false), serialPort(-1), fieldHandler(fieldHandler) { }
 
 VictronSerial::~VictronSerial()
 {
@@ -73,6 +73,26 @@ void VictronSerial::dumpFields()
     {
         delete fields.front();
         fields.pop();
+    }
+}
+
+void VictronSerial::processFields()
+{
+    if (!fieldHandler)
+    {
+        dumpFields();
+        return;
+    }
+    Field* field;
+    // Clear Queue
+    while (!fields.empty()) 
+    {
+        field = fields.front();
+        fields.pop();
+
+        fieldHandler->fieldUpdate(field->getId(), field->getData(), field->getSize());
+
+        delete field;
     }
 }
 
@@ -176,6 +196,8 @@ void VictronSerial::processBuffer(char *buffer, int size)
     while(index < size);
 }
 
+
+
 void VictronSerial::processEntry()
 {
     // Victron specifies a max number of fields.
@@ -185,11 +207,12 @@ void VictronSerial::processEntry()
     {
         dumpFields();
     }
+    
     switch (labelData.lower)
     {
         case VOLTAGE:
         case PANEL_VOLTAGE:
-            fields.push((Field*)(new Int32Field(labelData.lower, std::atol(fieldData))));
+            fields.push(new Field(labelData.lower, std::atol(fieldData)));
             break;
         case CURRENT:
         case PANEL_POWER:
@@ -200,30 +223,32 @@ void VictronSerial::processEntry()
         case YIELD_YESTERDAY:
         case MAX_POWER_YESTERDAY:
         case DAY_SEQUENCE:
-            fields.push((Field*)(new Int16Field(labelData.lower, std::atoi(fieldData))));
+            fields.push(new Field(labelData.lower, std::atoi(fieldData)));
             break;
         case OPERATION_STATE:
         case ERROR_STATE:
         case TRACKER_OPERATION_MODE:
-            fields.push((Field*)(new Int8Field(labelData.lower, std::atoi(fieldData))));
+            fields.push(new Field(labelData.lower, (int8_t) std::atoi(fieldData)));
             break;
         case PRODUCT_ID:
         case FIRMWARE:
         case SERIAL:
-            fields.push((Field*)(new StringField(labelData.lower, std::string(fieldData))));
+            fields.push(new Field(labelData.lower, std::string(fieldData).c_str(), fieldIndex + 1));
             break;
         case LOAD: // ON/OFF value
-            fields.push((Field*)(new Int8Field(labelData.lower, (strcmp(fieldData, "ON") == 0))));
+            fields.push(new Field(labelData.lower, (bool) (strcmp(fieldData, "ON") == 0)));
             break;
         case CHEC:
             if (labelData.upper == KSUM)
             {
-                if (checksum == 0 && dataHandler != NULL)
+                if (checksum == 0)
                 {
-                    // Valid checksum
-                    dataHandler->fieldsUpdate(&fields);
+                    processFields();
                 }
-                dumpFields();
+                else
+                {
+                    dumpFields();
+                }
                 checksum = 0;
             }
         break; 

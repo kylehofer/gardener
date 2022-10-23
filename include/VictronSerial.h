@@ -80,14 +80,14 @@ typedef union {
     }; 
 } LabelToBuffer_u;
 
-class VictronDataHandler
+class VictronFieldHandler
 {
 private:
 protected:
 public:
-    VictronDataHandler() {};
-    virtual ~VictronDataHandler() {};
-    virtual void fieldsUpdate(std::queue<Field*>* fields) = 0;
+    VictronFieldHandler() {};
+    virtual ~VictronFieldHandler() {};
+    virtual void fieldUpdate(uint32_t id, void* data, size_t size) = 0;
 };
 
 class VictronSerial : Executor
@@ -102,7 +102,7 @@ private:
     int fieldIndex;
     int8_t checksum;
     std::queue<Field*> fields;
-    VictronDataHandler* dataHandler;
+    VictronFieldHandler* fieldHandler;
 
     /**
      * @brief Process a buffer read from the victron serial
@@ -126,6 +126,12 @@ private:
     int closePort();
 
     /**
+     * @brief Processes all fields in the queue
+     * 
+     */
+    void processFields();
+
+    /**
      * @brief Frees all memory held by the fields queue
      * 
      */
@@ -141,7 +147,7 @@ protected:
 
 public:
     VictronSerial();
-    VictronSerial(VictronDataHandler* dataHandler);
+    VictronSerial(VictronFieldHandler* dataHandler);
     ~VictronSerial();
     using Executor::execute;
 
