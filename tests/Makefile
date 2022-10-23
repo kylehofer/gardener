@@ -4,7 +4,10 @@ SRC_OUT_DIR=../build/src
 TEST_DIR=.
 SRC_DIR=../src
 INCLUDE_DIR=../include
+<<<<<<< HEAD
 TEST_INCLUDE_DIR=.
+=======
+>>>>>>> 92c74b54da2c57e1f7d9487770df2c376b6293a2
 INSTALL_DIR=/usr/bin
 
 PKGCONFIG = $(shell which pkg-config)
@@ -27,7 +30,11 @@ CCFLAGS=$(DEBUG) $(OPT) $(WARN) $(PTHREAD) -pipe
 
 # linker  -export-dynamic -lX11 -ljpeg  -L/usr/local/lib/
 LD=g++
+<<<<<<< HEAD
 LFLAGS=-I/usr/include/modbus/ -I${INCLUDE_DIR} -I${TEST_INCLUDE_DIR}
+=======
+LFLAGS=-I/usr/include/modbus/ -I${INCLUDE_DIR}
+>>>>>>> 92c74b54da2c57e1f7d9487770df2c376b6293a2
 LDFLAGS=$(PTHREAD) -lmodbus /usr/lib/x86_64-linux-gnu/libgtest.a /usr/lib/x86_64-linux-gnu/libgtest_main.a
 
 MKDIR_P = mkdir -p
