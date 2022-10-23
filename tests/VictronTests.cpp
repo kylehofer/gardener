@@ -41,6 +41,13 @@ inline bool fileExists(const std::string& name) {
     }
 }
 
+void handleError()
+{
+    system("killall socat");
+    EXPECT_FALSE(1);
+    exit(EXIT_FAILURE);
+}
+
 TEST(VictronSerial, TestSerialPayload) {
     int timeoutCount = 0;
     int inPort;
@@ -51,16 +58,15 @@ TEST(VictronSerial, TestSerialPayload) {
     std::thread portThread(&system, PORT_COMMAND.c_str());
 
     // Wait till out input/output ports are open
-    while (!fileExists(INPUT_PORT) && !fileExists(OUTPUT_PORT) && timeoutCount++ < TIMEOUT)
+    while ((!fileExists(INPUT_PORT) || !fileExists(OUTPUT_PORT)) && timeoutCount++ < TIMEOUT)
     {
         usleep(50);
     }
     
-    usleep(1);
-
+    // If we timed out, kill tests
     if (timeoutCount >= TIMEOUT)
     {
-        system("killall socat");
+        handleError();
     }
 
     handler = new TestHandler();
@@ -68,20 +74,28 @@ TEST(VictronSerial, TestSerialPayload) {
 
     if (victronSerial.initialize(OUTPUT_PORT.c_str(), VICTRON_BAUD, VICTRON_PARITY, VICTRON_DATA_BITS, VICTRON_STOP_BITS))
     {
-        system("killall socat");
-        exit(EXIT_FAILURE);
+        // Exit out if serial failed to initialize
+        handleError();
     }
 
     inPort = open_port(INPUT_PORT.c_str(), VICTRON_BAUD, VICTRON_PARITY, VICTRON_DATA_BITS, VICTRON_STOP_BITS);
 
+    if (inPort < 0)
+    {
+        // Input failed to initialize
+        handleError();
+    }
+
+    // Configure the Victron port to be blocking
     if (set_port_synchronization(OUTPUT_PORT.c_str(), 0, 10) < 0)
     {
-        system("killall socat");
-        exit(EXIT_FAILURE);
+        // Failed to configure port
+        handleError();
     }
 
     write(inPort, TEST_INPUT_1, sizeof(TEST_INPUT_1));
 
+    // Setting out test values
     handler->setExpectedValues({
         .voltage = 22930,
         .panelVoltage = 41200,
@@ -103,13 +117,16 @@ TEST(VictronSerial, TestSerialPayload) {
         .serial = "HQ21094NFGX",
     });
 
+    // Executing the serial handler
     victronSerial.execute();
 
+    // Matching the number of fields processed matches
     EXPECT_EQ(handler->getCount(), 18);
 
+    // Cleanup
     system("killall socat");
-
-    portThread.join();
-
     delete handler;
+
+    // Joining thread so we block until it closes
+    portThread.join();
 }

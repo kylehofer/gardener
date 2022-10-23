@@ -5,15 +5,15 @@
 #include "gtest/gtest.h"
 #include "VictronSerial.h"
 
+// Test value
 #define TEST_INPUT_1 "\r\nPID	0xA053\r\nFW	159\r\nSER#	HQ21094NFGX\r\nV	22930\r\nI	-50\r\nVPV	41200\r\nPPV	8\r\nCS	3\r\nMPPT	2\r\nOR	0x00000000\r\nERR	0\r\nLOAD	ON\r\nIL	400\r\nH19	2679\r\nH20	1\r\nH21	14\r\nH22	18\r\nH23	79\r\nHSDS	297\r\nChecksum		\r\n"
 
+/**
+ * @brief Struct for holding test values
+ * 
+ */
 typedef struct _ExpectedValues
 {
-    int32_t test32int;
-    int16_t test16int;
-    int8_t test8int;
-    std::string testString;
-
     int32_t voltage;
     int32_t panelVoltage;
     int16_t current;
@@ -34,6 +34,10 @@ typedef struct _ExpectedValues
     const char* serial;
 } ExpectedValues;
 
+/**
+ * @brief Test handler for verifying the processed results
+ * 
+ */
 class TestHandler : VictronFieldHandler
 {
 private:
@@ -48,11 +52,23 @@ public:
         this->expectedValues = expectedValues; 
     }
 
+    /**
+     * @brief Get the number of processed fields
+     * 
+     * @return int 
+     */
     int getCount()
     {
         return count;
     }
 
+    /**
+     * @brief Called when a field gets updated
+     * 
+     * @param id The id of the field
+     * @param data A pointer to the fields data
+     * @param size The size of the data held in memory
+     */
     void fieldUpdate(uint32_t id, void* data, size_t size)
     {
         count++;
@@ -109,7 +125,7 @@ public:
             case SERIAL:
                 ASSERT_STREQ((char*) data, expectedValues.serial) << "The Serial " << ((char*) data) << " did not match " << expectedValues.serial;
                 break;
-            case LOAD: // ON/OFF value
+            case LOAD:
                 EXPECT_EQ(*((bool*) data), expectedValues.load);
                 break;
             case OFF_REASON:
@@ -119,6 +135,9 @@ public:
     }
 };
 
+/**
+ * @brief Mock Serial to force executions for tests
+ */
 class MockVictronSerial : VictronSerial
 {
     protected:
