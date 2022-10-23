@@ -30,6 +30,7 @@
  */
 
 #include "ModbusDevice.h"
+#include <cstddef>
 
 ModbusDevice::ModbusDevice() : connection(NULL), slaveId(-1) { }
 

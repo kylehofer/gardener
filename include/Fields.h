@@ -57,7 +57,7 @@ public:
      * 
      * @return int 
      */
-    int getId() { return id; };
+    uint32_t getId() { return id; };
     /**
      * @brief Get the Data object
      * 
@@ -175,7 +175,7 @@ public:
      */
     Int16Field(uint32_t id, int16_t data) : Field(id), data(data) {};
     ~Int16Field() {};
-    void getData(void* data) { *((uint16_t*) data) = this->data; };
+    void getData(void* data) { *((int16_t*) data) = this->data; };
 };
 
 class UInt8Field : Field
@@ -207,7 +207,7 @@ public:
      */
     Int8Field(uint32_t id, int8_t data) : Field(id), data(data) {};
     ~Int8Field() {};
-    void getData(void* data) { *((uint8_t*) data) = this->data; };
+    void getData(void* data) { *((int8_t*) data) = this->data; };
 };
 
 #endif /* FIELDS */
