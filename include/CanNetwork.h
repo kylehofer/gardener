@@ -1,7 +1,7 @@
 /*
- * File: Fields.h
+ * File: CanNetwork.h
  * Project: gardener
- * Created Date: Friday October 21st 2022
+ * Created Date: Monday October 24th 2022
  * Author: Kyle Hofer
  * 
  * MIT License
@@ -29,61 +29,31 @@
  * HISTORY:
  */
 
-#ifndef FIELDS
-#define FIELDS
+#ifndef CANNETWORK
+#define CANNETWORK
 
-#include <cstdint>
-#include <string>
-#include <cstring>
+#include "Executor.h"
 
-/**
- * @brief Base class for handling all Victron Fields.
- * Provides an Id/Data field combo.
- * 
- */
-class Field
+class CanNetwork : Executor
 {
 private:
-    uint32_t id;
-    size_t size;
-    void* data;
+    int socketId;
+    bool initialized;
+protected:
+    /**
+     * @brief
+     * 
+     * @return clock_t 
+     */
+    clock_t doExecute();
+
 public:
-    /**
-     * @brief Construct a new Field object
-     * 
-     * @param id Unique identifier for the field
-     */
-    template <typename T> Field(uint32_t id, T data): id(id), size(sizeof(T))
-    {
-        this->data = std::malloc(sizeof(T));
-        *((T*) this->data) = data;
-    };
-
-        /**
-     * @brief Construct a new Field object
-     * 
-     * @param id Unique identifier for the field
-     */
-    template <typename T> Field(uint32_t id, T* data, size_t size): id(id)
-    {
-        this->data = std::malloc(size);
-        this->size = size;
-        std::memcpy(this->data, data, size);
-    };
-
-    ~Field() 
-    {
-        free(data);
-    };
-    
-    /**
-     * @brief Get the Id object
-     * 
-     * @return int 
-     */
-    uint32_t getId() { return id; };
-    void* getData() { return data; };
-    size_t getSize() { return size; };
+    CanNetwork();
+    ~CanNetwork();
+    using Executor::execute;
+    int initialize();
+    int readCan();
+    int closeSocket();
 };
 
-#endif /* FIELDS */
+#endif /* CANNETWORK */
