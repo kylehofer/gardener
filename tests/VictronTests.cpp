@@ -1,0 +1,132 @@
+#include "gtest/gtest.h"
+
+#include <thread>
+#include <cstdlib>
+#include <unistd.h>
+#include <iostream>
+#include <fstream>
+
+#include <sys/types.h>
+#include <signal.h>
+#include <termios.h>
+
+#include "VictronTests.h"
+#include "utils.h"
+
+#define TIMEOUT 10000
+
+const std::string INPUT_PORT = "./input";
+const std::string OUTPUT_PORT = "./output";
+const std::string PORT_COMMAND = "socat pty,raw,echo=0,link=" + INPUT_PORT + " pty,raw,echo=0,link=" + OUTPUT_PORT;
+
+#define VICTRON_PORT "./output"
+#define VICTRON_BAUD B19200
+#define VICTRON_DATA_BITS 8
+#define VICTRON_STOP_BITS 1
+#define VICTRON_PARITY 'N' 
+
+/**
+ * @brief Checked whether or not a file exists
+ * 
+ * @param name 
+ * @return true 
+ * @return false 
+ */
+inline bool fileExists(const std::string& name) {
+    if (FILE *file = fopen(name.c_str(), "r")) {
+        fclose(file);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void handleError()
+{
+    system("killall socat");
+    EXPECT_FALSE(1);
+    exit(EXIT_FAILURE);
+}
+
+TEST(VictronSerial, TestSerialPayload) {
+    int timeoutCount = 0;
+    int inPort;
+    TestHandler* handler;
+    VictronSerial victronSerial;
+
+    // Start up virtual ports on a seperate thread
+    std::thread portThread(&system, PORT_COMMAND.c_str());
+
+    // Wait till out input/output ports are open
+    while ((!fileExists(INPUT_PORT) || !fileExists(OUTPUT_PORT)) && timeoutCount++ < TIMEOUT)
+    {
+        usleep(50);
+    }
+    
+    // If we timed out, kill tests
+    if (timeoutCount >= TIMEOUT)
+    {
+        handleError();
+    }
+
+    handler = new TestHandler();
+    victronSerial = VictronSerial((VictronFieldHandler *) handler);
+
+    if (victronSerial.initialize(OUTPUT_PORT.c_str(), VICTRON_BAUD, VICTRON_PARITY, VICTRON_DATA_BITS, VICTRON_STOP_BITS))
+    {
+        // Exit out if serial failed to initialize
+        handleError();
+    }
+
+    inPort = open_port(INPUT_PORT.c_str(), VICTRON_BAUD, VICTRON_PARITY, VICTRON_DATA_BITS, VICTRON_STOP_BITS);
+
+    if (inPort < 0)
+    {
+        // Input failed to initialize
+        handleError();
+    }
+
+    // Configure the Victron port to be blocking
+    if (set_port_synchronization(OUTPUT_PORT.c_str(), 0, 10) < 0)
+    {
+        // Failed to configure port
+        handleError();
+    }
+
+    write(inPort, TEST_INPUT_1, sizeof(TEST_INPUT_1));
+
+    // Setting out test values
+    handler->setExpectedValues({
+        .voltage = 22930,
+        .panelVoltage = 41200,
+        .current = -50,
+        .panelPower = 8,
+        .loadCurrent = 400,
+        .yieldTotal = 2679,
+        .yieldToday = 1,
+        .maxPowerToday = 14,
+        .yieldYesterday = 18,
+        .maxPowerYesterday = 79,
+        .daySequence = 297,
+        .operationState = 3,
+        .errorState = 0,
+        .trackerOperationMode = 2,
+        .load = 1,
+        .productId = "0xA053",
+        .firmware = "159",
+        .serial = "HQ21094NFGX",
+    });
+
+    // Executing the serial handler
+    victronSerial.execute();
+
+    // Matching the number of fields processed matches
+    EXPECT_EQ(handler->getCount(), 18);
+
+    // Cleanup
+    system("killall socat");
+    delete handler;
+
+    // Joining thread so we block until it closes
+    portThread.join();
+}

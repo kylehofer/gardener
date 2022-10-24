@@ -29,57 +29,62 @@
  * HISTORY:
  */
 
-#include <stdio.h>
-#include <unistd.h>
-#include <modbus.h>
-#include <string.h>
-#include <errno.h>
-#include <sys/ioctl.h>
-#include <linux/serial.h>
-#include <asm/ioctls.h>
-#include <stdlib.h>
+#include <ctime>
+#include <cstdlib>
 
-#include "garden_lights.h"
+#include <termios.h>
+#include <unistd.h>
+
+
+#include "GardenLights.h"
+#include "ModbusConnection.h"
+#include "VictronSerial.h"
+
+#define MODBUS_PORT "/dev/ttyO4"
+#define MODBUS_BAUD 38400
+#define MODBUS_DATA_BITS 8
+#define MODBUS_STOP_BITS 2
+#define MODBUS_PARITY 'N'
+
+#define VICTRON_PORT "/dev/ttyO5"
+#define VICTRON_BAUD B19200
+#define VICTRON_DATA_BITS 8
+#define VICTRON_STOP_BITS 1
+#define VICTRON_PARITY 'N'
 
 
 int main(int argc, char *argv[])
 {
-    int ret = 0;
-    modbus_t *modbus_context;
-    clock_t timestamp;
+    ModbusConnection modbusConnection = ModbusConnection();
+    VictronSerial victronSerial = VictronSerial();
+
+    if (modbusConnection.configure(MODBUS_PORT, MODBUS_BAUD, MODBUS_PARITY, MODBUS_DATA_BITS, MODBUS_STOP_BITS) != 0)
+    {
+        exit(EXIT_FAILURE);
+    }
+
+    if (modbusConnection.connect() != 0)
+    {
+        exit(EXIT_FAILURE);
+    }
+
+    GardenLights gardenLights = GardenLights(&modbusConnection);
+
+    if (victronSerial.initialize(VICTRON_PORT, VICTRON_BAUD, VICTRON_PARITY, VICTRON_DATA_BITS, VICTRON_STOP_BITS))
+    {
+        exit(EXIT_FAILURE);
+    }
     
-    if (argc < 2)
-    {
-        printf("Missing Serial Port Argument\n");
-        exit(EXIT_FAILURE);
-    }
-
-    struct timeval response_timeout;
-    response_timeout.tv_sec = 0;
-    response_timeout.tv_usec = 500000;
-
-    modbus_context = modbus_new_rtu(argv[1], 38400, 'N', 8, 2);
-    if (modbus_context == NULL)
-    {
-        printf("Unable to create the modbus context for the port: %s. Error: %s\n", argv[1], strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-
-    modbus_set_response_timeout(modbus_context, &response_timeout);
-
-    ret = modbus_connect(modbus_context);
-    if(ret < 0)
-    {
-        printf("Error while trying to connect to port: %s. Error: %s\n", argv[1], strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-
     for(;;)
     {
-        garden_lights_process(modbus_context, clock());
+        gardenLights.execute();
+        victronSerial.execute();
         usleep(50);
     }
-
-    modbus_close(modbus_context);
-    modbus_free(modbus_context);
+    return 0;
 }
+
+// void exit(int status)
+// {
+//     // garden_lights_destroy();
+// }

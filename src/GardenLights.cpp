@@ -1,7 +1,7 @@
 /*
- * File: garden_lights.c
+ * File: GardenLights.cpp
  * Project: gardener
- * Created Date: Sunday October 16th 2022
+ * Created Date: Thursday October 20th 2022
  * Author: Kyle Hofer
  * 
  * MIT License
@@ -29,79 +29,60 @@
  * HISTORY:
  */
 
-#include "garden_lights.h"
-#include <errno.h>
+#include "GardenLights.h"
+#include <time.h>
 
+#define LIGHT_HIGH 85
 #define SLAVE_ID 2
-#define MAX_TIMEOUT CLOCKS_PER_SEC
+
 // This is a delay to prevent polling/writing at too high of a frequency
 // This is chosen purely from testing and hasn't yet been chosen by calculations
-#define EXECUTE_TIME CLOCKS_PER_SEC << 2
-#define LIGHT_HIGH 85
+#define EXECUTE_TIME (CLOCKS_PER_SEC << 2)
+#define IDLE_TIME (CLOCKS_PER_SEC << 8)
 
 enum {
-    LIGHT_COMMAND,
+    LIGHT_COMMAND_ADDRESS,
     TOTAL_ERRORS,
     TOTAL_REGS_SIZE
 };
 
-uint16_t expected_light_command = 0;
-uint16_t read_light_command = 0;
+GardenLights::GardenLights() : ModbusDevice(), expectedLightCommand(0), readLightCommand(0) {};
+GardenLights::GardenLights(ModbusConnection* connection) : ModbusDevice(connection, SLAVE_ID), expectedLightCommand(0), readLightCommand(0) {};
 
-uint16_t poll_delay = 0;
-
-int garden_lights_process(modbus_t *modbus_context, clock_t timestamp)
+clock_t GardenLights::doExecute()
 {
-    if (poll_delay > timestamp && (timestamp - poll_delay) < MAX_TIMEOUT)
-    {
-        return 0;
-    }
-
-    int result;
-
-    result = modbus_set_slave(modbus_context, SLAVE_ID);
-
-    if(result < 0)
-    {
-        return -1; // Set Slave Failed. TODO: Add DEBUG
-    }
-
     time_t current_time = time(NULL);
     struct tm local_time = *localtime(&current_time);
 
     if ( // Make Time Range Configurable
             (local_time.tm_hour > 18 || (local_time.tm_hour == 18 && local_time.tm_min >= 30)) && 
             (local_time.tm_hour < 22 || (local_time.tm_hour == 22 && local_time.tm_min < 30))
-        )
+    )
     {
-        expected_light_command = LIGHT_HIGH;
+        this->expectedLightCommand = LIGHT_HIGH;
     }
     else
     {
-        expected_light_command = 0;
+        this->expectedLightCommand = 0;
     }
 
-    if (expected_light_command != read_light_command)
+    if (this->expectedLightCommand != this->readLightCommand)
     {
-        result = modbus_write_register(modbus_context, LIGHT_COMMAND, expected_light_command);
-        poll_delay = clock() + EXECUTE_TIME;
-        if (result < 0)
+        if (this->write(LIGHT_COMMAND_ADDRESS, this->expectedLightCommand))
         {
-            return -1; // Write Failed TODO: Add DEBUG
+            // TODO: Failed to write
         }
+        return EXECUTE_TIME;
+    }
+    uint16_t data[TOTAL_REGS_SIZE];
+
+    if (!this->read(0, TOTAL_REGS_SIZE, data))
+    {
+        this->readLightCommand = data[LIGHT_COMMAND_ADDRESS];
     }
     else
     {
-        uint16_t slave_data[TOTAL_REGS_SIZE];
-        
-        result = modbus_read_registers(modbus_context, 0, TOTAL_REGS_SIZE, slave_data);
-        poll_delay = clock() + EXECUTE_TIME;
-        if (result < 0)
-        {
-            return -1; // Write Failed TODO: Add DEBUG
-        }
-        read_light_command = slave_data[LIGHT_COMMAND];
+        // TODO: Failed to read
     }
-
-    return 0;
+    return EXECUTE_TIME;
 }

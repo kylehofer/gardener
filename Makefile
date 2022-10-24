@@ -1,41 +1,16 @@
-TARGET=gardener
-OUT_DIR=build
+all: src tests
 
-PKGCONFIG = $(shell which pkg-config)
+src:
+	make -C ./src
 
-# compiler
-CC=gcc
-# debug
-DEBUG=-g
-# optimisation
-OPT=-O0
-# warnings
-WARN=-Wall
+tests:
+	make -C ./tests
 
-PTHREAD=-pthread
+# run_tests:
 
-SOURCES=$(wildcard src/*.c)
-OBJECTS=$(patsubst src/%.c, build/%.o, $(SOURCES))
-
-
-
-CCFLAGS=$(DEBUG) $(OPT) $(WARN) $(PTHREAD) -pipe
-
-# linker  -export-dynamic -lX11 -ljpeg  -L/usr/local/lib/
-LD=gcc
-LFLAGS=-I/usr/include/modbus/
-LDFLAGS=$(PTHREAD) -lmodbus
-
-MKDIR_P = mkdir -p
-
-all: ${OUT_DIR} $(OBJECTS)
-	$(LD) -o $(OUT_DIR)/$(TARGET) $(OBJECTS) $(LDFLAGS) $(LFLAGS) $(LFLAGS) 
-
-${OUT_DIR}:
-	${MKDIR_P} ${OUT_DIR}
-
-$(OBJECTS): build/%.o : src/%.c
-	$(CC) -c $< $(CCFLAGS) $(LFLAGS) $(LDFLAGS) -o $@
 
 clean:
-	rm -f build/*.o build/*.c $(TARGET)
+	make clean -C ./src
+	make clean -C ./tests
+
+.PHONY: all tests clean src

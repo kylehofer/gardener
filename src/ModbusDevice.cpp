@@ -1,7 +1,7 @@
 /*
- * File: garden_lights.h
+ * File: ModbusDevice.cpp
  * Project: gardener
- * Created Date: Sunday October 16th 2022
+ * Created Date: Thursday October 20th 2022
  * Author: Kyle Hofer
  * 
  * MIT License
@@ -29,12 +29,35 @@
  * HISTORY:
  */
 
-#ifndef GARDEN_LIGHTS
-#define GARDEN_LIGHTS
+#include "ModbusDevice.h"
+#include <cstddef>
 
-#include <modbus.h>
-#include <time.h>
+ModbusDevice::ModbusDevice() : connection(NULL), slaveId(-1) { }
 
-int garden_lights_process(modbus_t *modbus_context, clock_t timestamp);
+ModbusDevice::ModbusDevice(ModbusConnection* connection, int slaveId) : connection(connection), slaveId(slaveId) { }
 
-#endif /* GARDEN_LIGHTS */
+void ModbusDevice::setConnection(ModbusConnection* connection)
+{
+    this->connection = connection;
+}
+
+void ModbusDevice::setSlaveId(int slaveId)
+{
+    this->slaveId = slaveId;
+}
+
+int ModbusDevice::read(int address, int size, uint16_t* value)
+{
+    return connection->read(this->slaveId, address, size, value);
+}
+
+int ModbusDevice::write(int address, uint16_t value)
+{
+    return connection->write(this->slaveId, address, value);
+}
+
+int ModbusDevice::write(int address, int size, uint16_t* value)
+{
+    return connection->write(this->slaveId, address, size, value);
+}
+

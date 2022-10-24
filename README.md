@@ -11,7 +11,8 @@ This project is for managing my automated gardening system. The system is powere
 
 - [x] Modbus Support
 - [x] Garden Light Module Communication
-- [ ] Serial Communication with Victron Smart Solar
+- [x] Serial Communication with Victron Smart Solar
+- [x] Test Framework Added
 - [ ] MQTT Support
 - [ ] Remote Configuration
 - [ ] Remote Commands
