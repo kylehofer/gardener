@@ -6,8 +6,8 @@ src:
 tests:
 	make -C ./tests
 
-# run_tests:
-
+copy:
+	 sshpass -p $(PASSWORD) rsync -rav -e ssh --exclude='build/' --exclude='.git/' --exclude='temp/' ./ $(USER)@$(HOST):$(TARGET)
 
 clean:
 	make clean -C ./src

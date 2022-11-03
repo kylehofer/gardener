@@ -38,8 +38,8 @@
 class GardenLights : ModbusDevice, Executor
 {
     private:
-        uint16_t expectedLightCommand;
-        uint16_t readLightCommand;
+        uint16_t nextLightCommand;
+        uint16_t currentLightCommand;
     protected:
         clock_t doExecute();
     public:

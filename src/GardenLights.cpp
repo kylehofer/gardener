@@ -31,14 +31,17 @@
 
 #include "GardenLights.h"
 #include <time.h>
+#include <iostream>
 
-#define LIGHT_HIGH 85
+#define LIGHT_HIGH 45
+#define LIGHT_LOW 0
 #define SLAVE_ID 2
 
 // This is a delay to prevent polling/writing at too high of a frequency
 // This is chosen purely from testing and hasn't yet been chosen by calculations
-#define EXECUTE_TIME (CLOCKS_PER_SEC << 2)
-#define IDLE_TIME (CLOCKS_PER_SEC << 8)
+#define EXECUTE_TIME (CLOCKS_PER_SEC)
+#define IDLE_TIME (CLOCKS_PER_SEC >> 8)
+#define GARDEN_LIGHTS "Garden Lights: " <<
 
 enum {
     LIGHT_COMMAND_ADDRESS,
@@ -46,8 +49,8 @@ enum {
     TOTAL_REGS_SIZE
 };
 
-GardenLights::GardenLights() : ModbusDevice(), expectedLightCommand(0), readLightCommand(0) {};
-GardenLights::GardenLights(ModbusConnection* connection) : ModbusDevice(connection, SLAVE_ID), expectedLightCommand(0), readLightCommand(0) {};
+GardenLights::GardenLights() : ModbusDevice(), nextLightCommand(0), currentLightCommand(0) {};
+GardenLights::GardenLights(ModbusConnection* connection) : ModbusDevice(connection, SLAVE_ID), nextLightCommand(0), currentLightCommand(0) {};
 
 clock_t GardenLights::doExecute()
 {
@@ -55,34 +58,48 @@ clock_t GardenLights::doExecute()
     struct tm local_time = *localtime(&current_time);
 
     if ( // Make Time Range Configurable
-            (local_time.tm_hour > 18 || (local_time.tm_hour == 18 && local_time.tm_min >= 30)) && 
-            (local_time.tm_hour < 22 || (local_time.tm_hour == 22 && local_time.tm_min < 30))
+            (local_time.tm_hour > 20 || (local_time.tm_hour == 20 && local_time.tm_min >= 00)) && 
+            (local_time.tm_hour < 22 || (local_time.tm_hour == 22 && local_time.tm_min < 00))
     )
     {
-        this->expectedLightCommand = LIGHT_HIGH;
+        if (nextLightCommand != LIGHT_HIGH)
+        {
+            nextLightCommand = LIGHT_HIGH;
+            std::cout << GARDEN_LIGHTS "sunset activated, setting expected intensity to " << nextLightCommand << "\%\n";
+        }
     }
-    else
+    else if (nextLightCommand != LIGHT_LOW)
     {
-        this->expectedLightCommand = 0;
+        nextLightCommand = LIGHT_LOW;
+        std::cout << GARDEN_LIGHTS "Saving power, setting expected intensity to " << nextLightCommand << "\%\n";
     }
 
-    if (this->expectedLightCommand != this->readLightCommand)
+    if (nextLightCommand != currentLightCommand)
     {
-        if (this->write(LIGHT_COMMAND_ADDRESS, this->expectedLightCommand))
+        if (write(LIGHT_COMMAND_ADDRESS, nextLightCommand) < 0)
         {
             // TODO: Failed to write
         }
-        return EXECUTE_TIME;
-    }
-    uint16_t data[TOTAL_REGS_SIZE];
-
-    if (!this->read(0, TOTAL_REGS_SIZE, data))
-    {
-        this->readLightCommand = data[LIGHT_COMMAND_ADDRESS];
+        else
+        {
+            std::cout << GARDEN_LIGHTS "intensity changed from " << currentLightCommand << "\% to " << nextLightCommand << "\%\n";
+            currentLightCommand = nextLightCommand;
+            // TODO: Successfully written
+        }
     }
     else
     {
-        // TODO: Failed to read
+        uint16_t data[TOTAL_REGS_SIZE];
+
+        if (read(0, TOTAL_REGS_SIZE, data) < 0)
+        {
+            // TODO: Failed to read
+        }
+        else
+        {
+            currentLightCommand = data[LIGHT_COMMAND_ADDRESS];
+        }
     }
+
     return EXECUTE_TIME;
 }

@@ -35,13 +35,11 @@
 #include <termios.h>
 #include <unistd.h>
 
-
 #include "GardenLights.h"
 #include "ModbusConnection.h"
 #include "VictronSerial.h"
-#include "CanNetwork.h"
 
-#define MODBUS_PORT "/dev/ttyO4"
+#define MODBUS_PORT "/dev/ttySC0"
 #define MODBUS_BAUD 38400
 #define MODBUS_DATA_BITS 8
 #define MODBUS_STOP_BITS 2
@@ -53,16 +51,14 @@
 #define VICTRON_STOP_BITS 1
 #define VICTRON_PARITY 'N'
 
-// #define MODBUS_ENABLED
+#define MODBUS_ENABLED
 // #define VICTRON_ENABLED
-#define CAN_ENABLED
 
 
 int main(int argc, char *argv[])
 {
     ModbusConnection modbusConnection = ModbusConnection();
     VictronSerial victronSerial = VictronSerial();
-    CanNetwork canNetwork = CanNetwork();
 
     #ifdef MODBUS_ENABLED
     if (modbusConnection.configure(MODBUS_PORT, MODBUS_BAUD, MODBUS_PARITY, MODBUS_DATA_BITS, MODBUS_STOP_BITS) != 0)
@@ -77,8 +73,6 @@ int main(int argc, char *argv[])
     GardenLights gardenLights = GardenLights(&modbusConnection);
     #endif
 
-    
-
     #ifdef VICTRON_ENABLED
     if (victronSerial.initialize(VICTRON_PORT, VICTRON_BAUD, VICTRON_PARITY, VICTRON_DATA_BITS, VICTRON_STOP_BITS))
     {
@@ -86,12 +80,6 @@ int main(int argc, char *argv[])
     }
     #endif
 
-    #ifdef CAN_ENABLED
-    if (canNetwork.initialize())
-    {
-        exit(EXIT_FAILURE);
-    }
-    #endif
     
     for(;;)
     {
@@ -102,11 +90,7 @@ int main(int argc, char *argv[])
         #ifdef VICTRON_ENABLED
             victronSerial.execute();
         #endif
-
-        #ifdef CAN_ENABLED
-            canNetwork.execute();
-        #endif
-        usleep(50);
+        usleep(500);
     }
     return 0;
 }

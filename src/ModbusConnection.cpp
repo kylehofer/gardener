@@ -35,6 +35,10 @@
 #include <cerrno>
 #include <iostream>
 
+#define MODBUS_CONNECTION "Modbus Connection: " <<
+
+// #define DEBUG
+
 ModbusConnection::ModbusConnection() : connected(false), modbusContext(NULL) { }
 
 ModbusConnection::~ModbusConnection() 
@@ -54,23 +58,33 @@ ModbusConnection::~ModbusConnection()
 
 int ModbusConnection::configure(const char *port, int baud, char parity, int data_bit, int stop_bit)
 {
+    int result;
     modbusContext = modbus_new_rtu(port, baud, parity, data_bit, stop_bit);
     if (modbusContext == NULL)
     {
-        std::cout << "Unable to create the modbus context for the port: " << port << ". Error: " << std::strerror(errno) << "\n";
+        std::cout << MODBUS_CONNECTION "Unable to create the modbus context for the port: " << port << ". Error: " << std::strerror(errno) << "\n";
         return -1;
     }
+
+    std::cout << MODBUS_CONNECTION "connection initialized on port " << port << ". BAUD: " << baud << ", PARITY: " << parity << ", DATA BITS: " << data_bit << ", STOP BITS: " << stop_bit << "\n";
 
     this->port = port;
 
     #if (LIBMODBUS_VERSION_MINOR > 0)
-         modbus_set_response_timeout(modbusContext, 0, 500000);
+        result = modbus_set_response_timeout(modbusContext, 0, 500000);
     #else
         struct timeval response_timeout;
         response_timeout.tv_sec = 0;
         response_timeout.tv_usec = 500000;
-        modbus_set_response_timeout(modbusContext, &response_timeout);
+        result = modbus_set_response_timeout(modbusContext, &response_timeout);
     #endif
+
+    if (result < 0)
+    {
+        std::cout << MODBUS_CONNECTION "Error while trying to configure response timeout: " << port << ". Error: " << std::strerror(errno) << "\n";
+        return -1;
+    }
+
     return 0;
 }
 
@@ -78,16 +92,23 @@ int ModbusConnection::connect()
 {
     if (modbusContext == NULL)
     {
-        std::cout << "ModbusConnection is not configured.\n";
+        std::cout << MODBUS_CONNECTION "cannot connect as it has not been configured.\n";
         return -1;
     }
 
     int result = modbus_connect(modbusContext);
     if(result < 0)
     {
-        std::cout << "Error while trying to connect to port: " << port << ". Error: " << std::strerror(errno) << "\n";
+        std::cout << MODBUS_CONNECTION "Error while trying to connect to port: " << port << ". Error: " << std::strerror(errno) << "\n";
         return result;
     }
+
+    #ifdef DEBUG
+    modbus_set_debug(modbusContext, TRUE);
+    #endif
+
+    std::cout << MODBUS_CONNECTION "Successfully connected\n";
+    
     connected = true;
     return 0;
 }
@@ -107,7 +128,7 @@ int ModbusConnection::setSlaveId(int slaveId)
         result = modbus_set_slave(modbusContext, slaveId);
         if(result < 0)
         {
-            std::cout << "Error while trying to set slave id to: " << slaveId << ". Error: " << std::strerror(errno) << "\n";
+            std::cout << MODBUS_CONNECTION "Error while trying to set slave id to: " << slaveId << ". Error: " << std::strerror(errno) << "\n";
             return result;
         }
         this->slaveId = slaveId;
