@@ -11,7 +11,7 @@ CC=g++
 # debug
 DEBUG=-g
 # optimisation
-OPT=-O0
+OPT=-O3
 # warnings
 WARN=-Wall
 

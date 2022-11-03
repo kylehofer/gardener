@@ -34,8 +34,9 @@
 
 #include <ctime>
 #include <unistd.h>
+#include <iostream>
 
-#define MAX_TIMEOUT CLOCKS_PER_SEC
+#define MAX_TIMEOUT (CLOCKS_PER_SEC << 1)
 
 class Executor
 {
@@ -57,14 +58,15 @@ public:
      */
     void execute()
     {
-        clock_t timestamp;
+        clock_t difference;
 
-        timestamp = clock();
-        if (0 && (this->executeDelay < timestamp || (this->executeDelay - timestamp) > MAX_TIMEOUT))
+        difference = executeDelay - clock();
+        if (difference > 0 && difference <= MAX_TIMEOUT)
         {
             return;
         }
-        this->executeDelay = (this->doExecute() + clock());
+
+        executeDelay = this->doExecute()  + clock();
     };
 };
 

@@ -36,8 +36,6 @@
 #include <string>
 #include <cstring>
 
-
-
 /**
  * @brief Base class for handling all Victron Fields.
  * Provides an Id/Data field combo.

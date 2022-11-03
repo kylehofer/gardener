@@ -35,12 +35,11 @@
 #include <termios.h>
 #include <unistd.h>
 
-
 #include "GardenLights.h"
 #include "ModbusConnection.h"
 #include "VictronSerial.h"
 
-#define MODBUS_PORT "/dev/ttyO4"
+#define MODBUS_PORT "/dev/ttySC0"
 #define MODBUS_BAUD 38400
 #define MODBUS_DATA_BITS 8
 #define MODBUS_STOP_BITS 2
@@ -52,12 +51,16 @@
 #define VICTRON_STOP_BITS 1
 #define VICTRON_PARITY 'N'
 
+#define MODBUS_ENABLED
+// #define VICTRON_ENABLED
+
 
 int main(int argc, char *argv[])
 {
     ModbusConnection modbusConnection = ModbusConnection();
     VictronSerial victronSerial = VictronSerial();
 
+    #ifdef MODBUS_ENABLED
     if (modbusConnection.configure(MODBUS_PORT, MODBUS_BAUD, MODBUS_PARITY, MODBUS_DATA_BITS, MODBUS_STOP_BITS) != 0)
     {
         exit(EXIT_FAILURE);
@@ -67,19 +70,27 @@ int main(int argc, char *argv[])
     {
         exit(EXIT_FAILURE);
     }
-
     GardenLights gardenLights = GardenLights(&modbusConnection);
+    #endif
 
+    #ifdef VICTRON_ENABLED
     if (victronSerial.initialize(VICTRON_PORT, VICTRON_BAUD, VICTRON_PARITY, VICTRON_DATA_BITS, VICTRON_STOP_BITS))
     {
         exit(EXIT_FAILURE);
     }
+    #endif
+
     
     for(;;)
     {
-        gardenLights.execute();
-        victronSerial.execute();
-        usleep(50);
+        #ifdef MODBUS_ENABLED
+            gardenLights.execute();
+        #endif
+
+        #ifdef VICTRON_ENABLED
+            victronSerial.execute();
+        #endif
+        usleep(500);
     }
     return 0;
 }
