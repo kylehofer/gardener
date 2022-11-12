@@ -11,7 +11,6 @@
 #include <termios.h>
 
 #include "VictronTests.h"
-#include "utils.h"
 
 #define TIMEOUT 10000
 
@@ -41,60 +40,14 @@ inline bool fileExists(const std::string& name) {
     }
 }
 
-void handleError()
-{
-    system("killall socat");
-    EXPECT_FALSE(1);
-    exit(EXIT_FAILURE);
-}
-
-TEST(VictronSerial, TestSerialPayload) {
-    int timeoutCount = 0;
-    int inPort;
+TEST(VictronSerial, TestClassHandlerPayload) {
     TestHandler* handler;
-    VictronSerial victronSerial;
-
-    // Start up virtual ports on a seperate thread
-    std::thread portThread(&system, PORT_COMMAND.c_str());
-
-    // Wait till out input/output ports are open
-    while ((!fileExists(INPUT_PORT) || !fileExists(OUTPUT_PORT)) && timeoutCount++ < TIMEOUT)
-    {
-        usleep(50);
-    }
-    
-    // If we timed out, kill tests
-    if (timeoutCount >= TIMEOUT)
-    {
-        handleError();
-    }
+    VictronParser victronSerial;
 
     handler = new TestHandler();
-    victronSerial = VictronSerial((VictronFieldHandler *) handler);
+    victronSerial = VictronParser((VictronFieldHandler *) handler);
 
-    if (victronSerial.initialize(OUTPUT_PORT.c_str(), VICTRON_BAUD, VICTRON_PARITY, VICTRON_DATA_BITS, VICTRON_STOP_BITS))
-    {
-        // Exit out if serial failed to initialize
-        handleError();
-    }
-
-    inPort = open_port(INPUT_PORT.c_str(), VICTRON_BAUD, VICTRON_PARITY, VICTRON_DATA_BITS, VICTRON_STOP_BITS);
-
-    if (inPort < 0)
-    {
-        // Input failed to initialize
-        handleError();
-    }
-
-    // Configure the Victron port to be blocking
-    if (set_port_synchronization(OUTPUT_PORT.c_str(), 0, 10) < 0)
-    {
-        // Failed to configure port
-        handleError();
-    }
-
-    write(inPort, TEST_INPUT_1, sizeof(TEST_INPUT_1));
-
+    
     // Setting out test values
     handler->setExpectedValues({
         .voltage = 22930,
@@ -117,16 +70,8 @@ TEST(VictronSerial, TestSerialPayload) {
         .serial = "HQ21094NFGX",
     });
 
-    // Executing the serial handler
-    victronSerial.execute();
+    victronSerial.parse(TEST_INPUT_1, sizeof(TEST_INPUT_1));
 
     // Matching the number of fields processed matches
     EXPECT_EQ(handler->getCount(), 18);
-
-    // Cleanup
-    system("killall socat");
-    delete handler;
-
-    // Joining thread so we block until it closes
-    portThread.join();
 }

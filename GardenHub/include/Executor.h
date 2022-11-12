@@ -1,7 +1,7 @@
 /*
- * File: ModbusServer.cpp
+ * File: Executor.h
  * Project: gardener
- * Created Date: Thursday October 20th 2022
+ * Created Date: Friday October 21st 2022
  * Author: Kyle Hofer
  * 
  * MIT License
@@ -29,3 +29,33 @@
  * HISTORY:
  */
 
+#ifndef EXECUTOR
+#define EXECUTOR
+
+#include <unistd.h>
+
+#ifndef __AVR__
+#include <chrono>
+#include <thread>
+#endif // __AVR__
+
+
+#define MAX_TIMEOUT 2000
+
+class Executor
+{
+private:
+protected:
+    inline virtual int32_t doExecute() = 0;
+public:
+    Executor() {};
+    /**
+     * @brief Internal execute task to be implemented. The delay returned from this function will be the delay before the next execute.
+     * 
+     * @return int32_t 
+     */
+    inline void executeSync() { std::this_thread::sleep_for(std::chrono::milliseconds(doExecute())); }
+    inline int32_t execute() { return doExecute(); }
+};
+
+#endif /* EXECUTOR */

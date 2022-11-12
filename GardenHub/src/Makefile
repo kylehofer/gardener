@@ -2,6 +2,9 @@ TARGET=gardener
 OUT_DIR=../build/src
 SRC_DIR=.
 INCLUDE_DIR=../include
+GARDEN_BED_INCLUDE_DIR=../../GardenBed/include
+GARDEN_SHED_INCLUDE_DIR=../../GardenShed/include
+GARDEN_LIBRARY_INCLUDE_DIR=../../GardenLibrary/include
 INSTALL_DIR=/usr/bin
 
 PKGCONFIG = $(shell which pkg-config)
@@ -24,7 +27,7 @@ CCFLAGS=$(DEBUG) $(OPT) $(WARN) $(PTHREAD) -pipe -std=c++0x
 
 # linker  -export-dynamic -lX11 -ljpeg  -L/usr/local/lib/
 LD=g++
-LFLAGS=-I/usr/include/modbus/ -I${INCLUDE_DIR}
+LFLAGS=-I/usr/include/modbus/ -I${INCLUDE_DIR} -I${GARDEN_BED_INCLUDE_DIR} -I${GARDEN_SHED_INCLUDE_DIR} -I${GARDEN_LIBRARY_INCLUDE_DIR}
 LDFLAGS=$(PTHREAD) -lmodbus
 
 MKDIR_P = mkdir -p

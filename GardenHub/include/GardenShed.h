@@ -1,7 +1,7 @@
 /*
- * File: Fields.h
+ * File: GardenShed.h
  * Project: gardener
- * Created Date: Friday October 21st 2022
+ * Created Date: Saturday November 12th 2022
  * Author: Kyle Hofer
  * 
  * MIT License
@@ -29,61 +29,25 @@
  * HISTORY:
  */
 
-#ifndef FIELDS
-#define FIELDS
+#ifndef GARDENSHED
+#define GARDENSHED
 
-#include <cstdint>
-#include <string>
-#include <cstring>
+#include "ModbusDevice.h"
+#include "Executor.h"
 
-/**
- * @brief Base class for handling all Victron Fields.
- * Provides an Id/Data field combo.
- * 
- */
-class Field
+class GardenShed : ModbusDevice, Executor
 {
-private:
-    uint32_t id;
-    size_t size;
-    void* data;
-public:
-    /**
-     * @brief Construct a new Field object
-     * 
-     * @param id Unique identifier for the field
-     */
-    template <typename T> Field(uint32_t id, T data): id(id), size(sizeof(T))
-    {
-        this->data = std::malloc(sizeof(T));
-        *((T*) this->data) = data;
-    };
-
-        /**
-     * @brief Construct a new Field object
-     * 
-     * @param id Unique identifier for the field
-     */
-    template <typename T> Field(uint32_t id, T* data, size_t size): id(id)
-    {
-        this->data = std::malloc(size);
-        this->size = size;
-        std::memcpy(this->data, data, size);
-    };
-
-    ~Field() 
-    {
-        free(data);
-    };
-    
-    /**
-     * @brief Get the Id object
-     * 
-     * @return int 
-     */
-    uint32_t getId() { return id; };
-    void* getData() { return data; };
-    size_t getSize() { return size; };
+    private:
+    protected:
+        int32_t doExecute();
+    public:
+        GardenShed();
+        GardenShed(ModbusConnection* connection);
+        using ModbusDevice::getHoldingRegisters;
+        using ModbusDevice::request;
+        using ModbusDevice::reply;
+        using Executor::execute;
+        using Executor::executeSync;
 };
 
-#endif /* FIELDS */
+#endif /* GARDENSHED */

@@ -1,7 +1,7 @@
 /*
- * File: ModbusDevice.cpp
+ * File: GardenShedCommon.h
  * Project: gardener
- * Created Date: Thursday October 20th 2022
+ * Created Date: Saturday November 12th 2022
  * Author: Kyle Hofer
  * 
  * MIT License
@@ -29,35 +29,41 @@
  * HISTORY:
  */
 
-#include "ModbusDevice.h"
-#include <cstddef>
+#ifndef GARDENSHEDCOMMON
+#define GARDENSHEDCOMMON
 
-ModbusDevice::ModbusDevice() : connection(NULL), slaveId(-1) { }
+#include "ModbusUtils.h"
 
-ModbusDevice::ModbusDevice(ModbusConnection* connection, int slaveId) : connection(connection), slaveId(slaveId) { }
+// Starting register id
+#define MODBUS_START_REGISTER 0
+#define MODBUS_ID 3
 
-void ModbusDevice::setConnection(ModbusConnection* connection)
-{
-    this->connection = connection;
-}
+enum MODBUS_INPUT_REGISTERS {
+    DOUBLE_REGISTER_VALUE(VICTRON_VOLTAGE, MODBUS_START_REGISTER),
+    DOUBLE_REGISTER(VICTRON_PANEL_VOLTAGE),
+    VICTRON_CURRENT,
+    VICTRON_PANEL_POWER,
+    VICTRON_LOAD_CURRENT,
+    VICTRON_OPERATION_STATE,
+    VICTRON_ERROR_STATE,
+    VICTRON_LOAD,
+    VICTRON_YIELD_TOTAL,
+    VICTRON_YIELD_TODAY,
+    VICTRON_MAX_POWER_TODAY,
+    VICTRON_YIELD_YESTERDAY,
+    VICTRON_MAX_POWER_YESTERDAY,
+    VICTRON_TRACKER_OPERATION_MODE,
+    VICTRON_DAY_SEQUENCE,
+    VICTRON_SERIAL_NUMBER,
+    VICTRON_PRODUCT_ID,
+    VICTRON_FIRMWARE,
+    VICTRON_OFF_REASON,
+    TOTAL_INPUT_REGISTERS
+};
 
-void ModbusDevice::setSlaveId(int slaveId)
-{
-    this->slaveId = slaveId;
-}
+enum MODBUS_HOLDING_REGISTERS {
+    SHED_LIGHT_COMMAND = MODBUS_START_REGISTER,
+    TOTAL_HOLDING_REGISTERS
+};
 
-int ModbusDevice::read(int address, int size, uint16_t* value)
-{
-    return connection->read(this->slaveId, address, size, value);
-}
-
-int ModbusDevice::write(int address, uint16_t value)
-{
-    return connection->write(this->slaveId, address, value);
-}
-
-int ModbusDevice::write(int address, int size, uint16_t* value)
-{
-    return connection->write(this->slaveId, address, size, value);
-}
-
+#endif /* GARDENSHEDCOMMON */

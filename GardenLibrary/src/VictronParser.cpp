@@ -1,7 +1,7 @@
 /*
- * File: VictronSerial.cpp
+ * File: VictronParser.cpp
  * Project: gardener
- * Created Date: Friday October 21st 2022
+ * Created Date: Monday November 7th 2022
  * Author: Kyle Hofer
  * 
  * MIT License
@@ -29,17 +29,15 @@
  * HISTORY:
  */
 
-#include "VictronSerial.h"
-#include "utils.h"
+#include "VictronParser.h"
 
-#include <stdexcept>
-#include <cstring>
-#include <cerrno>
-#include <iostream>
-
-#include <stdint.h>
-
-#define IDLE_TIME (CLOCKS_PER_SEC << 2)
+#include "Fields.h"
+#ifndef __AVR__
+#include <cstdlib>
+using namespace std;
+#else
+#include <Arduino.h>
+#endif // __AVR__
 
 // Character denoting the start of a new field
 #define START_CHARACTER '\n'
@@ -49,84 +47,60 @@
 #define SPLIT_CHARACTER '\t'
 // Character denoting an Async message
 #define ASYNC_CHARACTER ':'
-// Maximum number of fields that in a single block with a checksum
-#define MAX_FIELDS_COUNT 22
 
-// State of the Victron serial
-enum {
-    IDLE, LABEL, FIELD, ASYNC, CHECKSUM
-};
 
-VictronSerial::VictronSerial() : Executor(), initialized(false), serialPort(-1), fieldHandler(NULL) { }
-VictronSerial::VictronSerial(VictronFieldHandler* fieldHandler) : Executor(), initialized(false), serialPort(-1), fieldHandler(fieldHandler) { }
+VictronParser::VictronParser() : fieldHandlerFunc(NULL), fieldHandlerClass(NULL), fieldCount(0) { }
+VictronParser::VictronParser(VictronFieldHandler* fieldHandlerClass) : fieldHandlerFunc(NULL), fieldHandlerClass(fieldHandlerClass), fieldCount(0) { };
+VictronParser::VictronParser(void (*fieldHandlerFunc)(uint32_t, void*, size_t)) : fieldHandlerFunc(fieldHandlerFunc), fieldHandlerClass(NULL), fieldCount(0) { };
 
-VictronSerial::~VictronSerial()
+VictronParser::~VictronParser()
 {
     dumpFields();
-    closePort();
 }
 
-void VictronSerial::dumpFields()
+void VictronParser::dumpFields()
 {
-    // Clear Queue
-    while (!fields.empty()) 
+    for (int i = (fieldCount - 1); i >= 0; i--)
     {
-        delete fields.front();
-        fields.pop();
+        delete fields[i];
     }
+    
+    fieldCount = 0;
 }
 
-void VictronSerial::processFields()
+void VictronParser::processFields()
 {
-    if (!fieldHandler)
+    if (!fieldHandlerFunc && !fieldHandlerClass)
     {
         dumpFields();
         return;
     }
+    
     Field* field;
-    // Clear Queue
-    while (!fields.empty()) 
+
+    if (fieldHandlerClass)
     {
-        field = fields.front();
-        fields.pop();
-
-        fieldHandler->fieldUpdate(field->getId(), field->getData(), field->getSize());
-
-        delete field;
+        for (int i = (fieldCount - 1); i >= 0; i--)
+        {
+            field = fields[i];
+            fieldHandlerClass->fieldUpdate(field->getId(), field->getData(), field->getSize());
+            delete field;
+        }
     }
-}
-
-int VictronSerial::closePort()
-{
-    if (close_port(serialPort) < 0)
+    else
     {
-        std::cout << "Error while trying to close the previous port. Error: " << std::strerror(errno) << "\n";
-        return -1;
-    }
-    return 0;
-}
-
-int VictronSerial::initialize(const char *port, int baud, char parity, int data_bit, int stop_bits)
-{
-    closePort();
-
-    initialized = false;
-    state = IDLE;
-    checksum = 0;
-
-    serialPort = open_port(port, baud, parity, data_bit, stop_bits);
-
-    if (serialPort < 0)
-    {
-        return -1;
+        for (int i = (fieldCount - 1); i >= 0; i--)
+        {
+            field = fields[i];
+            fieldHandlerFunc(field->getId(), field->getData(), field->getSize());
+            delete field;
+        }
     }
 
-    initialized = true;
-
-    return 0;
+    fieldCount = 0;
 }
 
-void VictronSerial::processBuffer(char *buffer, int size)
+void VictronParser::parse(const char *buffer, int size)
 {
     int index = 0;
     do
@@ -135,7 +109,7 @@ void VictronSerial::processBuffer(char *buffer, int size)
         switch (state)
         {
             case LABEL:
-                // std::cout << "LABEL\n";
+                // cout << "LABEL\n";
                 if (input == SPLIT_CHARACTER)
                 {
                     state = FIELD;
@@ -196,14 +170,12 @@ void VictronSerial::processBuffer(char *buffer, int size)
     while(index < size);
 }
 
-
-
-void VictronSerial::processEntry()
+void VictronParser::processEntry()
 {
     // Victron specifies a max number of fields.
     // If we go over this count we might be overloading a queue.
     // We should dump our queue as we've got ourselves into a bad state.
-    if (fields.size() >= MAX_FIELDS_COUNT)
+    if (fieldCount >= MAX_FIELDS_COUNT)
     {
         dumpFields();
     }
@@ -212,7 +184,8 @@ void VictronSerial::processEntry()
     {
         case VOLTAGE:
         case PANEL_VOLTAGE:
-            fields.push(new Field(labelData.lower, std::atol(fieldData)));
+            fields[fieldCount] = new Field(labelData.lower, atol(fieldData));
+            fieldCount++;
             break;
         case CURRENT:
         case PANEL_POWER:
@@ -223,20 +196,24 @@ void VictronSerial::processEntry()
         case YIELD_YESTERDAY:
         case MAX_POWER_YESTERDAY:
         case DAY_SEQUENCE:
-            fields.push(new Field(labelData.lower, std::atoi(fieldData)));
+            fields[fieldCount] = new Field(labelData.lower, atoi(fieldData));
+            fieldCount++;
             break;
         case OPERATION_STATE:
         case ERROR_STATE:
         case TRACKER_OPERATION_MODE:
-            fields.push(new Field(labelData.lower, (int8_t) std::atoi(fieldData)));
+            fields[fieldCount] = new Field(labelData.lower, (int8_t) atoi(fieldData));
+            fieldCount++;
             break;
         case PRODUCT_ID:
         case FIRMWARE:
-        case SERIAL:
-            fields.push(new Field(labelData.lower, std::string(fieldData).c_str(), fieldIndex + 1));
+        case SERIAL_NUMBER:
+            fields[fieldCount] = new Field(labelData.lower, fieldData, fieldIndex + 1);
+            fieldCount++;
             break;
         case LOAD: // ON/OFF value
-            fields.push(new Field(labelData.lower, (bool) (strcmp(fieldData, "ON") == 0)));
+            fields[fieldCount] = new Field(labelData.lower, (bool) (strcmp(fieldData, "ON") == 0));
+            fieldCount++;
             break;
         case CHEC:
             if (labelData.upper == KSUM)
@@ -257,22 +234,3 @@ void VictronSerial::processEntry()
             break;
     }
 }
-
-clock_t VictronSerial::doExecute()
-{
-    if (!initialized)
-    {
-        return IDLE_TIME;
-    }
-
-    char buffer[1024];
-    int bytes_read;
-    bytes_read = read(serialPort, &buffer, sizeof(buffer));
-
-    if (bytes_read > 0)
-    {
-        processBuffer(buffer, bytes_read);
-    }
-    
-    return IDLE_TIME;
-};

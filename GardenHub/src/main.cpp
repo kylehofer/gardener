@@ -35,9 +35,16 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include "GardenLights.h"
+#include <thread>
+#include <vector>
+#include <chrono>
+#include <mutex>
+#include <csignal>
+#include <atomic>
+
+#include "GardenBed.h"
+#include "GardenShed.h"
 #include "ModbusConnection.h"
-#include "VictronSerial.h"
 
 #define MODBUS_PORT "/dev/ttySC0"
 #define MODBUS_BAUD 38400
@@ -45,22 +52,31 @@
 #define MODBUS_STOP_BITS 2
 #define MODBUS_PARITY 'N'
 
-#define VICTRON_PORT "/dev/ttyO5"
-#define VICTRON_BAUD B19200
-#define VICTRON_DATA_BITS 8
-#define VICTRON_STOP_BITS 1
-#define VICTRON_PARITY 'N'
-
 #define MODBUS_ENABLED
-// #define VICTRON_ENABLED
 
+using namespace std;
+
+vector<thread> threads;
+vector<Executor> executors;
+
+void gardenBedRunner(ModbusConnection* modbusConnection)
+{
+    GardenBed gardenBed = GardenBed(modbusConnection);
+
+    for(;;) { gardenBed.executeSync(); }
+}
+
+void gardenShedRunner(ModbusConnection* modbusConnection)
+{
+    GardenShed gardenShed = GardenShed(modbusConnection);
+
+    for(;;) { gardenShed.executeSync(); }
+}
 
 int main(int argc, char *argv[])
 {
-    ModbusConnection modbusConnection = ModbusConnection();
-    VictronSerial victronSerial = VictronSerial();
+    ModbusConnection modbusConnection;
 
-    #ifdef MODBUS_ENABLED
     if (modbusConnection.configure(MODBUS_PORT, MODBUS_BAUD, MODBUS_PARITY, MODBUS_DATA_BITS, MODBUS_STOP_BITS) != 0)
     {
         exit(EXIT_FAILURE);
@@ -70,32 +86,13 @@ int main(int argc, char *argv[])
     {
         exit(EXIT_FAILURE);
     }
-    GardenLights gardenLights = GardenLights(&modbusConnection);
+
+    #ifdef MODBUS_ENABLED
+    threads.push_back(thread(gardenBedRunner, &modbusConnection));
+    threads.push_back(thread(gardenShedRunner, &modbusConnection));
     #endif
 
-    #ifdef VICTRON_ENABLED
-    if (victronSerial.initialize(VICTRON_PORT, VICTRON_BAUD, VICTRON_PARITY, VICTRON_DATA_BITS, VICTRON_STOP_BITS))
-    {
-        exit(EXIT_FAILURE);
-    }
-    #endif
+    for(;;) { this_thread::sleep_for(std::chrono::seconds(1)); }
 
-    
-    for(;;)
-    {
-        #ifdef MODBUS_ENABLED
-            gardenLights.execute();
-        #endif
-
-        #ifdef VICTRON_ENABLED
-            victronSerial.execute();
-        #endif
-        usleep(500);
-    }
     return 0;
 }
-
-// void exit(int status)
-// {
-//     // garden_lights_destroy();
-// }

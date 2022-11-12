@@ -1,4 +1,4 @@
-TARGET=gardener_tests
+TARGET=GardenLibraryTests
 OUT_DIR=../build/tests
 SRC_OUT_DIR=../build/src
 TEST_DIR=.
@@ -21,7 +21,8 @@ WARN=-Wall
 PTHREAD=-pthread
 
 TEST_OBJECTS=$(patsubst ${TEST_DIR}/%.cpp, $(OUT_DIR)/%.o, $(wildcard ${TEST_DIR}/*.cpp))
-SRC_OBJECTS := $(filter-out ${SRC_OUT_DIR}/main.o, $(wildcard ${SRC_OUT_DIR}/*.o))
+LIBRARIES=../include/
+SRC_OBJECTS= $(filter-out ${SRC_OUT_DIR}/main.o, $(wildcard ${SRC_OUT_DIR}/*.o))
 
 CCFLAGS=$(DEBUG) $(OPT) $(WARN) $(PTHREAD) -pipe
 
@@ -32,7 +33,7 @@ LDFLAGS=$(PTHREAD) -lmodbus /usr/lib/x86_64-linux-gnu/libgtest.a /usr/lib/x86_64
 
 MKDIR_P = mkdir -p
 
-all: ${OUT_DIR} ${TEST_OBJECTS}
+all: src ${OUT_DIR} ${TEST_OBJECTS}
 	$(LD) -o $(OUT_DIR)/$(TARGET) ${TEST_OBJECTS} ${SRC_OBJECTS} $(LDFLAGS) $(LFLAGS) 
 	$(OUT_DIR)/$(TARGET)
 
@@ -44,3 +45,8 @@ $(TEST_OBJECTS): ${OUT_DIR}/%.o : ${TEST_DIR}/%.cpp
 
 clean:
 	rm -f ${OUT_DIR}/*.o ${OUT_DIR}/*.cpp $(TARGET)
+
+src:
+	$(MAKE) -C ../src
+
+.PHONY: src

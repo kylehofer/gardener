@@ -1,9 +1,6 @@
+
 #ifndef UTILS
 #define UTILS
-
-// #ifdef __cplusplus
-// extern "C" {
-// #endif
 
 
 /**

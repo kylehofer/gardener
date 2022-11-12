@@ -39,41 +39,52 @@ class ModbusDevice
 {
 private:
     ModbusConnection* connection;
-    clock_t pollDelay;
+    int32_t pollDelay;
     int slaveId;
+    modbus_mapping_t *modbusMapping;
+    uint8_t modbusRequest[MODBUS_TCP_MAX_ADU_LENGTH];
+    int modbusRequestResult;
 
 protected:
-    /**
-     * @brief Attempt to read data for the device
-     * 
-     * @param address 
-     * @param size 
-     * @param value 
-     * @return int 
-     */
-    int read(int address, int size, uint16_t* value);
+    // /**
+    //  * @brief Attempt to read data for the device
+    //  * 
+    //  * @param address 
+    //  * @param size 
+    //  * @param value 
+    //  * @return int 
+    //  */
+    // int read(int address, int size, uint16_t* value);
 
-    /**
-     * @brief Attempt to write a byte data to the device
-     * 
-     * @param address 
-     * @param value 
-     * @return int 
-     */
-    int write(int address, uint16_t value);
+    // /**
+    //  * @brief Attempt to write a byte data to the device
+    //  * 
+    //  * @param address 
+    //  * @param value 
+    //  * @return int 
+    //  */
+    // int write(int address, uint16_t value);
     
-    /**
-     * @brief Attempt to write bytes of data to the device
-     * 
-     * @param address 
-     * @param size 
-     * @param value 
-     * @return int 
-     */
-    int write(int address, int size, uint16_t* value);
+    // /**
+    //  * @brief Attempt to write bytes of data to the device
+    //  * 
+    //  * @param address 
+    //  * @param size 
+    //  * @param value 
+    //  * @return int 
+    //  */
+    // int write(int address, int size, uint16_t* value);
+
+    int request();
+    int reply();
+
+    uint8_t* getCoils();
+    uint8_t* getDiscreteInputs();
+    uint16_t* getInputRegisters();
+    uint16_t* getHoldingRegisters();
 public:
     ModbusDevice();
-    ModbusDevice(ModbusConnection* connection, int slaveId);
+    ModbusDevice(ModbusConnection* connection, int slaveId, modbus_mapping_t* modbusMapping);
     /**
      * @brief Set the Connection
      * 

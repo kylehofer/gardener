@@ -1,12 +1,14 @@
+#ifndef VICTRONTESTS
+#define VICTRONTESTS
 #ifndef VICTRON
 #define VICTRON
 
 #include <string>
 #include "gtest/gtest.h"
-#include "VictronSerial.h"
+#include "VictronParser.h"
 
 // Test value
-#define TEST_INPUT_1 "\r\nPID	0xA053\r\nFW	159\r\nSER#	HQ21094NFGX\r\nV	22930\r\nI	-50\r\nVPV	41200\r\nPPV	8\r\nCS	3\r\nMPPT	2\r\nOR	0x00000000\r\nERR	0\r\nLOAD	ON\r\nIL	400\r\nH19	2679\r\nH20	1\r\nH21	14\r\nH22	18\r\nH23	79\r\nHSDS	297\r\nChecksum		\r\n"
+const char TEST_INPUT_1[] = "\r\nPID	0xA053\r\nFW	159\r\nSER#	HQ21094NFGX\r\nV	22930\r\nI	-50\r\nVPV	41200\r\nPPV	8\r\nCS	3\r\nMPPT	2\r\nOR	0x00000000\r\nERR	0\r\nLOAD	ON\r\nIL	400\r\nH19	2679\r\nH20	1\r\nH21	14\r\nH22	18\r\nH23	79\r\nHSDS	297\r\nChecksum		\r\n";
 
 /**
  * @brief Struct for holding test values
@@ -122,7 +124,7 @@ public:
             case FIRMWARE:
                 ASSERT_STREQ((char*) data, expectedValues.firmware) << "The Firmware " << ((char*) data) << " did not match " << expectedValues.firmware;
                 break;
-            case SERIAL:
+            case SERIAL_NUMBER:
                 ASSERT_STREQ((char*) data, expectedValues.serial) << "The Serial " << ((char*) data) << " did not match " << expectedValues.serial;
                 break;
             case LOAD:
@@ -135,20 +137,23 @@ public:
     }
 };
 
-/**
- * @brief Mock Serial to force executions for tests
- */
-class MockVictronSerial : VictronSerial
-{
-    protected:
-        using VictronSerial::doExecute;
-    public:
-        MockVictronSerial() : VictronSerial() {};
-        MockVictronSerial(VictronFieldHandler* dataHandler) : VictronSerial(dataHandler) {};
-        clock_t execute()
-        {
-            return doExecute();
-        };
-};
+// /**
+//  * @brief Mock Serial to force executions for tests
+//  */
+// class MockVictronSerial : VictronSerial
+// {
+//     protected:
+//         using VictronSerial::execute;
+//     public:
+//         MockVictronSerial() : VictronSerial() {};
+//         MockVictronSerial(VictronFieldHandler* dataHandler) : VictronSerial(dataHandler) {};
+//         int32_t execute()
+//         {
+//             return execute();
+//         };
+// };
 
 #endif /* VICTRON */
+
+
+#endif /* VICTRONTESTS */

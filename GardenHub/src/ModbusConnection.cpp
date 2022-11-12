@@ -136,18 +136,35 @@ int ModbusConnection::setSlaveId(int slaveId)
     return 0;
 }
 
-int ModbusConnection::read(int slaveId, int address, int size, uint16_t* value)
+int ModbusConnection::request(int slaveId, uint8_t* modbusRequest)
 {
-    return setSlaveId(slaveId) || modbus_read_registers(modbusContext, 0, size, value);
+    int result;
+    connectionLock.lock();
+    result = setSlaveId(slaveId) || modbus_receive(modbusContext, modbusRequest);
+    connectionLock.unlock();
+    return result;
 }
 
-int ModbusConnection::write(int slaveId, int address, uint16_t value)
+int ModbusConnection::reply(int slaveId, uint8_t* modbusRequest, int modbusRequestResult, modbus_mapping_t* mapping)
 {
-    return setSlaveId(slaveId) || modbus_write_register(modbusContext, address, value);
+    int result;
+    connectionLock.lock();
+    result = setSlaveId(slaveId) || modbus_reply(modbusContext, modbusRequest, modbusRequestResult, mapping);
+    connectionLock.unlock();
+    return result;
 }
 
-int ModbusConnection::write(int slaveId, int address, int size, uint16_t* data)
-{
-    return setSlaveId(slaveId) || modbus_write_registers(modbusContext, address, size, data);
-}
+// int ModbusConnection::read(int slaveId, int address, int size, uint16_t* value)
+// {
+//     return setSlaveId(slaveId) || modbus_read_registers(modbusContext, 0, size, value);
+// }
 
+// int ModbusConnection::write(int slaveId, int address, uint16_t value)
+// {
+//     return setSlaveId(slaveId) || modbus_write_register(modbusContext, address, value);
+// }
+
+// int ModbusConnection::write(int slaveId, int address, int size, uint16_t* data)
+// {
+//     return setSlaveId(slaveId) || modbus_write_registers(modbusContext, address, size, data);
+// }

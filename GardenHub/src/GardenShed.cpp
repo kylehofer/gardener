@@ -1,7 +1,7 @@
 /*
- * File: ModbusServer.h
+ * File: GardenShed.cpp
  * Project: gardener
- * Created Date: Thursday October 20th 2022
+ * Created Date: Saturday November 12th 2022
  * Author: Kyle Hofer
  * 
  * MIT License
@@ -29,19 +29,43 @@
  * HISTORY:
  */
 
-#ifndef MODBUSSERVER
-#define MODBUSSERVER
+#include "GardenShed.h"
+#include "GardenShedCommon.h"
+#include <iostream>
 
-class ModbusServer
+#define LIGHT_HIGH 15
+#define LIGHT_LOW 0
+
+// This is a delay to prevent polling/writing at too high of a frequency
+// This is chosen purely from testing and hasn't yet been chosen by calculations
+#define EXECUTE_TIME 200
+#define GARDEN_SHED "Garden Shed: " <<
+
+GardenShed::GardenShed() : ModbusDevice() {};
+GardenShed::GardenShed(ModbusConnection* connection) : ModbusDevice(connection, MODBUS_ID, modbus_mapping_new(0, 0, TOTAL_INPUT_REGISTERS, TOTAL_HOLDING_REGISTERS)) {};
+
+int32_t GardenShed::doExecute()
 {
-private:
+    int request_result;
 
-protected:
+    request_result = request();
 
-public:
-    ModbusServer(const char *device, int baud, char parity, int data_bit, int stop_bit);
-    int connect();
-};
+    if (request_result < 0)
+    {
+        // TODO: Error
+    }
 
+    if (request_result > 0)
+    {
+        uint16_t* holdingRegisters = getHoldingRegisters();
 
-#endif /* MODBUSSERVER */
+        if (holdingRegisters[SHED_LIGHT_COMMAND] != LIGHT_HIGH)
+        {
+            holdingRegisters[SHED_LIGHT_COMMAND] = LIGHT_HIGH;
+        }
+
+        reply();
+    }
+
+    return EXECUTE_TIME;
+}

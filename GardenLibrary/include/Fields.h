@@ -1,5 +1,5 @@
 /*
- * File: Executor.h
+ * File: Fields.h
  * Project: gardener
  * Created Date: Friday October 21st 2022
  * Author: Kyle Hofer
@@ -29,45 +29,67 @@
  * HISTORY:
  */
 
-#ifndef EXECUTOR
-#define EXECUTOR
+#ifndef FIELDS
+#define FIELDS
 
-#include <ctime>
-#include <unistd.h>
-#include <iostream>
+#ifdef __AVR__
+#include  <stdint.h>
+#include <Arduino.h>
+#else
+#include <cstdint>
+#include <string>
+#include <cstring>
+using namespace std;
+#endif // __AVR__
 
-#define MAX_TIMEOUT (CLOCKS_PER_SEC << 1)
-
-class Executor
+/**
+ * @brief Base class for handling all Victron Fields.
+ * Provides an Id/Data field combo.
+ * 
+ */
+class Field
 {
 private:
-    clock_t executeDelay;
-protected:
-    /**
-     * @brief Internal execute task to be implemented. The delay returned from this function will be the delay before the next execute.
-     * 
-     * @return clock_t 
-     */
-    virtual clock_t doExecute() = 0;
+    uint32_t id;
+    size_t size;
+    void* data;
 public:
-    Executor() : executeDelay(0) {};
     /**
-     * @brief execute the main task if enough time has elapsed.
-     * The time waited is the returned delay from doExecute
+     * @brief Construct a new Field object
      * 
+     * @param id Unique identifier for the field
      */
-    void execute()
+    template <typename T> Field(uint32_t id, T data): id(id), size(sizeof(T))
     {
-        clock_t difference;
-
-        difference = executeDelay - clock();
-        if (difference > 0 && difference <= MAX_TIMEOUT)
-        {
-            return;
-        }
-
-        executeDelay = this->doExecute()  + clock();
+        this->data = malloc(sizeof(T));
+        *((T*) this->data) = data;
     };
+
+        /**
+     * @brief Construct a new Field object
+     * 
+     * @param id Unique identifier for the field
+     */
+    template <typename T> Field(uint32_t id, T* data, size_t size): id(id)
+    {
+        this->data = malloc(size);
+        this->size = size;
+        memcpy(this->data, data, size);
+    };
+
+    ~Field() 
+    {
+        free(data);
+    };
+    
+    /**
+     * @brief Get the Id object
+     * 
+     * @return int 
+     */
+    uint32_t getId() { return id; };
+    void* getData() { return data; };
+    size_t getSize() { return size; };
 };
 
-#endif /* EXECUTOR */
+#endif /* FIELDS */

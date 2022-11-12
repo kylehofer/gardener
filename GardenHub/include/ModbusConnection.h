@@ -33,6 +33,8 @@
 #define MODBUSCONNECTION
 
 #include <modbus.h>
+#include <mutex>
+using namespace std;
 
 /**
  * @brief 
@@ -45,6 +47,7 @@ private:
     bool connected;
     modbus_t *modbusContext;
     const char *port;
+    mutex connectionLock;
     int setSlaveId(int slaveId);
 protected:
 
@@ -77,34 +80,37 @@ public:
      */
     void disconnect();
 
-    /**
-     * @brief Attempt to read data from a slave
-     * 
-     * @param slaveId 
-     * @param address 
-     * @param size 
-     * @param value 
-     */
-    int read(int slaveId, int address, int size, uint16_t* value);
+    int request(int slaveId, uint8_t* modbusRequest);
+    int reply(int slaveId, uint8_t* modbusRequest, int modbusRequestResult, modbus_mapping_t* mapping);
 
-    /**
-     * @brief Attempt to write a byte of data to a slave
-     * 
-     * @param slaveId 
-     * @param address 
-     * @param value 
-     */
-    int write(int slaveId, int address, uint16_t value);
+    // /**
+    //  * @brief Attempt to read data from a slave
+    //  * 
+    //  * @param slaveId 
+    //  * @param address 
+    //  * @param size 
+    //  * @param value 
+    //  */
+    // int read(int slaveId, int address, int size, uint16_t* value);
 
-    /**
-     * @brief Attempt to write bytes of data to a slave
-     * 
-     * @param slaveId 
-     * @param address 
-     * @param size 
-     * @param data 
-     */
-    int write(int slaveId, int address, int size, uint16_t* data);
+    // /**
+    //  * @brief Attempt to write a byte of data to a slave
+    //  * 
+    //  * @param slaveId 
+    //  * @param address 
+    //  * @param value 
+    //  */
+    // int write(int slaveId, int address, uint16_t value);
+
+    // /**
+    //  * @brief Attempt to write bytes of data to a slave
+    //  * 
+    //  * @param slaveId 
+    //  * @param address 
+    //  * @param size 
+    //  * @param data 
+    //  */
+    // int write(int slaveId, int address, int size, uint16_t* data);
 };
 
 #endif /* MODBUSCONNECTION */

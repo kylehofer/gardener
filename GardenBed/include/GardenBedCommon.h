@@ -1,7 +1,7 @@
 /*
- * File: GardenLights.h
+ * File: GardenBedCommon.h
  * Project: gardener
- * Created Date: Thursday October 20th 2022
+ * Created Date: Saturday November 12th 2022
  * Author: Kyle Hofer
  * 
  * MIT License
@@ -29,25 +29,16 @@
  * HISTORY:
  */
 
-#ifndef GARDENLIGHTS
-#define GARDENLIGHTS
+#ifndef GARDENBEDCOMMON
+#define GARDENBEDCOMMON
 
-#include "ModbusDevice.h"
-#include "Executor.h"
+// Starting register id
+#define MODBUS_START_REGISTER 0
+#define MODBUS_ID 2
 
-class GardenLights : ModbusDevice, Executor
-{
-    private:
-        uint16_t nextLightCommand;
-        uint16_t currentLightCommand;
-    protected:
-        clock_t doExecute();
-    public:
-        GardenLights();
-        GardenLights(ModbusConnection* connection);
-        using ModbusDevice::setConnection;
-        using ModbusDevice::setSlaveId;
-        using Executor::execute;
+enum MODBUS_HOLDING_REGISTERS {
+    GARDEN_LIGHT_COMMAND = MODBUS_START_REGISTER,
+    TOTAL_HOLDING_REGISTERS
 };
 
-#endif /* GARDENLIGHTS */
+#endif /* GARDENBEDCOMMON */
