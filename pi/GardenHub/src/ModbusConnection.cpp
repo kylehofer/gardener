@@ -40,6 +40,8 @@
 #define MODBUS_TIMEOUT_MICRO 500000
 #define MODBUS_TIMEOUT_SECOND 0
 
+#define POLL_TIMEOUT 100
+
 // #define DEBUG
 
 ModbusConnection::ModbusConnection() : connected(false), modbusContext(NULL) { }
@@ -155,93 +157,94 @@ inline int ModbusConnection::setSlaveId(int slaveId)
     return 0;
 }
 
+inline void ModbusConnection::lock()
+{
+    connectionLock.lock();
+    std::this_thread::sleep_for(std::chrono::milliseconds(POLL_TIMEOUT)); 
+}
+
+inline void ModbusConnection::unlock()
+{
+    connectionLock.unlock();
+}
+
 int ModbusConnection::request(int slaveId, uint8_t* modbusRequest)
 {
-    int result;
-    connectionLock.lock();
-    result = setSlaveId(slaveId) || modbus_receive(modbusContext, modbusRequest);
-    connectionLock.unlock();
+    lock();
+    int result = setSlaveId(slaveId) || modbus_receive(modbusContext, modbusRequest);
+    unlock();
     return result;
 }
 
 int ModbusConnection::reply(int slaveId, uint8_t* modbusRequest, int modbusRequestResult, modbus_mapping_t* mapping)
 {
-    int result;
-    connectionLock.lock();
-    result = setSlaveId(slaveId) || modbus_reply(modbusContext, modbusRequest, modbusRequestResult, mapping);
-    connectionLock.unlock();
+    lock();
+    int result = setSlaveId(slaveId) || modbus_reply(modbusContext, modbusRequest, modbusRequestResult, mapping);
+    unlock();
     return result;
 }
 
 int ModbusConnection::readBits(int slaveId, int address, int size, uint8_t* data)
 {
-    int result;
-    connectionLock.lock();
-    result = setSlaveId(slaveId) || modbus_read_bits(modbusContext, address, size, data);
-    connectionLock.unlock();
+    lock();
+    int result = setSlaveId(slaveId) || modbus_read_bits(modbusContext, address, size, data);
+    unlock();
     return result;
 }
 
 
 int ModbusConnection::readInputBits(int slaveId, int address, int size, uint8_t* data)
 {
-    int result;
-    connectionLock.lock();
-    result = setSlaveId(slaveId) || modbus_read_input_bits(modbusContext, address, size, data);
-    connectionLock.unlock();
+    lock();
+    int result = setSlaveId(slaveId) || modbus_read_input_bits(modbusContext, address, size, data);
+    unlock();
     return result;
 }
 
 int ModbusConnection::readRegisters(int slaveId, int address, int size, uint16_t* data)
 {
-    int result;
-    connectionLock.lock();
-    result = setSlaveId(slaveId) || modbus_read_registers(modbusContext, address, size, data);
-    connectionLock.unlock();
+    lock();
+    int result = setSlaveId(slaveId) || modbus_read_registers(modbusContext, address, size, data);
+    unlock();
     return result;
 }
 
 int ModbusConnection::readInputRegisters(int slaveId, int address, int size, uint16_t* data)
 {
-    int result;
-    connectionLock.lock();
-    result = setSlaveId(slaveId) || modbus_read_input_registers(modbusContext, address, size, data);
-    connectionLock.unlock();
+    lock();
+    int result = setSlaveId(slaveId) || modbus_read_input_registers(modbusContext, address, size, data);
+    unlock();
     return result;
 }
 
 int ModbusConnection::writeBit(int slaveId, int address, int value)
 {
-    int result;
-    connectionLock.lock();
-    result = setSlaveId(slaveId) || modbus_write_bit(modbusContext, address, value);
-    connectionLock.unlock();
+    lock();
+    int result = setSlaveId(slaveId) || modbus_write_bit(modbusContext, address, value);
+    unlock();
     return result;
 }
 
 int ModbusConnection::writeBits(int slaveId, int address, int size, uint8_t* values)
 {
-    int result;
-    connectionLock.lock();
-    result = setSlaveId(slaveId) || modbus_write_bits(modbusContext, address, size, values);
-    connectionLock.unlock();
+    lock();
+    int result = setSlaveId(slaveId) || modbus_write_bits(modbusContext, address, size, values);
+    unlock();
     return result;
 }
 
 int ModbusConnection::writeRegister(int slaveId, int address, uint16_t value)
 {
-    int result;
-    connectionLock.lock();
-    result = setSlaveId(slaveId) || modbus_write_register(modbusContext, address, value);
-    connectionLock.unlock();
+    lock();
+    int result = setSlaveId(slaveId) || modbus_write_register(modbusContext, address, value);
+    unlock();
     return result;
 }
 
 int ModbusConnection::writeRegisters(int slaveId, int address, int size, uint16_t* values)
 {
-    int result;
-    connectionLock.lock();
-    result = setSlaveId(slaveId) || modbus_write_registers(modbusContext, address, size, values);
-    connectionLock.unlock();
+    lock();
+    int result = setSlaveId(slaveId) || modbus_write_registers(modbusContext, address, size, values);
+    unlock();
     return result;
 }

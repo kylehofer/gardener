@@ -34,6 +34,8 @@
 
 #include <modbus.h>
 #include <mutex>
+#include <chrono>
+#include <thread>
 using namespace std;
 
 /**
@@ -49,6 +51,8 @@ private:
     const char *port;
     mutex connectionLock;
     int setSlaveId(int slaveId);
+    void lock();
+    void unlock();
 protected:
 
 public:

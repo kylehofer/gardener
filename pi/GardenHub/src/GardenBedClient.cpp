@@ -40,7 +40,7 @@ using namespace GardenBed;
 
 // This is a delay to prevent polling/writing at too high of a frequency
 // This is chosen purely from testing and hasn't yet been chosen by calculations
-#define POLL_TIME 500
+#define POLL_TIME 5
 #define GARDEN_BED "Garden Bed: " <<
 
 GardenBedClient::GardenBedClient() : ModbusClient() {};
@@ -58,8 +58,6 @@ int32_t GardenBedClient::doExecute()
     {
         // return POLL_TIME;
     }
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(POLL_TIME));
 
     time_t current_time = time(NULL);
     struct tm local_time = *localtime(&current_time);

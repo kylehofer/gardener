@@ -40,7 +40,7 @@ using namespace GardenShed;
 
 // This is a delay to prevent polling/writing at too high of a frequency
 // This is chosen purely from testing and hasn't yet been chosen by calculations
-#define POLL_TIME 500
+#define POLL_TIME 5
 #define GARDEN_SHED "Garden Shed: " <<
 
 GardenShedClient::GardenShedClient() : ModbusClient() {};
@@ -60,17 +60,12 @@ int32_t GardenShedClient::doExecute()
         // return POLL_TIME;
     }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(POLL_TIME));
-
-
     result = readRegisters(MODBUS_START_REGISTER, TOTAL_HOLDING_REGISTERS, registers);
 
     if (result < 0)
     {
         // return POLL_TIME;
     }
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(POLL_TIME));
 
     if (registers[SHED_LIGHT_COMMAND] != LIGHT_HIGH)
     {
