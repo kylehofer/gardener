@@ -19,6 +19,9 @@
 #define MODBUS_BAUD_RATE 38400
 #define MAX485_ENABLE_PIN 2
 
+// Victron configuration
+#define VICTRON_BAUD_RATE 19200
+
 // Misc configuration
 #define LIGHT_OUT_PIN 5
 #define DOOR_SENSOR_PIN 10
@@ -94,6 +97,12 @@ SoftwareSerial softwareSerial = SoftwareSerial(SOFTWARE_SERIAL_RX, SOFTWARE_SERI
 
 void setup()
 {
+    // Define pin modes for TX and RX
+    pinMode(SOFTWARE_SERIAL_RX, INPUT);
+    pinMode(SOFTWARE_SERIAL_TX, OUTPUT);
+
+    softwareSerial.begin(VICTRON_BAUD_RATE);
+
     pinMode(DOOR_SENSOR_PIN, INPUT_PULLUP);
     pinMode(LIGHT_OUT_PIN, OUTPUT);
 
@@ -105,13 +114,13 @@ void setup()
     // Configure our input registers (Read only)
     for (int i = TOTAL_INPUT_REGISTERS - 1; i >= MODBUS_START_REGISTER; i--)
     {
-        modbusClient.addIreg(i);
+        modbusClient.addIreg(i, 0);
     }
 
     // Configure our holding registers (Read/Write)
     for (int i = TOTAL_HOLDING_REGISTERS - 1; i >= MODBUS_START_REGISTER; i--)
     {
-        modbusClient.addHreg(i);
+        modbusClient.addHreg(i, 0);
     }
 }
 
@@ -124,6 +133,7 @@ inline void doorHandler()
     // Used for calculating a debounce timer
     static DoorState doorState = CLOSED;
     static int debounce = 0;
+    static word lastLightCommand = 0;
     
     // lambda to make common functionality have the above scoped variables
     static auto debounceCheck = [&] (DoorState next) {
@@ -145,10 +155,11 @@ inline void doorHandler()
     // Button is pressed if digitalRead returns 0
     if (digitalRead(DOOR_SENSOR_PIN) == 1)
     {
-        if (debounceCheck(OPEN)) 
+        word lightCommand = modbusClient.Hreg(SHED_LIGHT_COMMAND);
+        if (debounceCheck(OPEN) || lightCommand != lastLightCommand) 
         {
-            int lightCommand = map(min(modbusClient.Hreg(SHED_LIGHT_COMMAND), 100), 0, 100, 0, 255);
-            analogWrite(LIGHT_OUT_PIN, lightCommand);
+            analogWrite(LIGHT_OUT_PIN, map(min(lightCommand, 100), 0, 100, 0, 255));
+            lastLightCommand = lightCommand;
         }
     }
     else
@@ -168,28 +179,28 @@ inline void victronHandler()
 {
     // Buffer for reading from the serial line
     static char buffer[SERIAL_BUFFER_SIZE];
-    // Timer so we don't just constantly execute
-    static unsigned long timestamp = millis();
 
-    // Calculate difference in time since last serial read
-    unsigned long difference = millis() - timestamp;
-
-    // Either enough time has passed, or the millis has wrapped around
-    if (difference > SERIAL_TIMER || difference > MAX_SERIAL_TIMER)
+    // Read buffer until nothing left
+    while(softwareSerial.available() > SERIAL_BUFFER_MIN)
     {
-        // Read buffer until nothing left
-        while(softwareSerial.available() > SERIAL_BUFFER_MIN)
-        {
-            int bytes = softwareSerial.readBytes(buffer, SERIAL_BUFFER_SIZE);
-            victronParser.parse(buffer, bytes);
-        }
+        int bytes = softwareSerial.readBytes(buffer, SERIAL_BUFFER_SIZE);
+        victronParser.parse(buffer, bytes);
     }
 }
 
 void loop()
 {
-    // Modbus main execute task. Update values etc
-    modbusClient.task();
-    doorHandler();
-    victronHandler();
+    // Timer so we don't just constantly execute
+    static unsigned long timestamp = millis();
+
+    // Calculate difference in time since last serial read
+    unsigned long difference = millis() - timestamp;
+    // Either enough time has passed, or the millis has wrapped around
+    if (difference > SERIAL_TIMER || difference > MAX_SERIAL_TIMER)
+    {
+        // Modbus main execute task. Update values etc
+        modbusClient.task();
+        doorHandler();
+        victronHandler();
+    }
 }

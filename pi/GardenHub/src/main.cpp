@@ -42,8 +42,8 @@
 #include <csignal>
 #include <atomic>
 
-#include "GardenBed.h"
-#include "GardenShed.h"
+#include "GardenBedClient.h"
+#include "GardenShedClient.h"
 #include "ModbusConnection.h"
 
 #define MODBUS_PORT "/dev/ttySC0"
@@ -57,18 +57,17 @@
 using namespace std;
 
 vector<thread> threads;
-vector<Executor> executors;
 
 void gardenBedRunner(ModbusConnection* modbusConnection)
 {
-    GardenBed gardenBed = GardenBed(modbusConnection);
+    GardenBedClient gardenBed = GardenBedClient(modbusConnection);
 
     for(;;) { gardenBed.executeSync(); }
 }
 
 void gardenShedRunner(ModbusConnection* modbusConnection)
 {
-    GardenShed gardenShed = GardenShed(modbusConnection);
+    GardenShedClient gardenShed = GardenShedClient(modbusConnection);
 
     for(;;) { gardenShed.executeSync(); }
 }

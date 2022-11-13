@@ -32,9 +32,9 @@
 #include "ModbusDevice.h"
 #include <cstddef>
 
-ModbusDevice::ModbusDevice() : connection(NULL), slaveId(-1), modbusMapping(NULL) { }
+ModbusDevice::ModbusDevice() : connection(NULL), slaveId(-1) { }
 
-ModbusDevice::ModbusDevice(ModbusConnection* connection, int slaveId, modbus_mapping_t* modbusMapping) : connection(connection), slaveId(slaveId), modbusMapping(modbusMapping) { }
+ModbusDevice::ModbusDevice(ModbusConnection* connection, int slaveId) : connection(connection), slaveId(slaveId) { }
 
 void ModbusDevice::setConnection(ModbusConnection* connection)
 {
@@ -46,33 +46,33 @@ void ModbusDevice::setSlaveId(int slaveId)
     this->slaveId = slaveId;
 }
 
-int ModbusDevice::request()
-{
-    return (modbusRequestResult = connection->request(slaveId, modbusRequest));
-}
+// int ModbusDevice::request()
+// {
+//     return (modbusRequestResult = connection->request(slaveId, modbusRequest));
+// }
 
-int ModbusDevice::reply()
-{
-    return connection->reply(slaveId, modbusRequest, modbusRequestResult, modbusMapping);
-}
+// int ModbusDevice::reply()
+// {
+//     return connection->reply(slaveId, modbusRequest, modbusRequestResult, modbusMapping);
+// }
 
-uint8_t* ModbusDevice::getCoils()
-{
-    return modbusMapping->tab_bits;
-}
+// uint8_t* ModbusDevice::getCoils()
+// {
+//     return modbusMapping->tab_bits;
+// }
 
-uint8_t* ModbusDevice::getDiscreteInputs()
-{
-    return modbusMapping->tab_input_bits;
-}
-uint16_t* ModbusDevice::getInputRegisters()
-{
-    return modbusMapping->tab_registers;
-}
-uint16_t* ModbusDevice::getHoldingRegisters()
-{
-    return modbusMapping->tab_input_registers;
-}
+// uint8_t* ModbusDevice::getDiscreteInputs()
+// {
+//     return modbusMapping->tab_input_bits;
+// }
+// uint16_t* ModbusDevice::getInputRegisters()
+// {
+//     return modbusMapping->tab_registers;
+// }
+// uint16_t* ModbusDevice::getHoldingRegisters()
+// {
+//     return modbusMapping->tab_input_registers;
+// }
 
 // int ModbusDevice::read(int address, int size, uint16_t* value)
 // {
@@ -88,3 +88,4 @@ uint16_t* ModbusDevice::getHoldingRegisters()
 // {
 //     return connection->write(this->slaveId, address, size, value);
 // }
+

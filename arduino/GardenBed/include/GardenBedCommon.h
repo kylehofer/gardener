@@ -32,6 +32,9 @@
 #ifndef GARDENBEDCOMMON
 #define GARDENBEDCOMMON
 
+namespace GardenBed
+{
+
 // Starting register id
 #define MODBUS_START_REGISTER 0
 #define MODBUS_ID 2
@@ -40,5 +43,7 @@ enum MODBUS_HOLDING_REGISTERS {
     GARDEN_LIGHT_COMMAND = MODBUS_START_REGISTER,
     TOTAL_HOLDING_REGISTERS
 };
+
+}
 
 #endif /* GARDENBEDCOMMON */

@@ -37,6 +37,9 @@
 
 #define MODBUS_CONNECTION "Modbus Connection: " <<
 
+#define MODBUS_TIMEOUT_MICRO 500000
+#define MODBUS_TIMEOUT_SECOND 0
+
 // #define DEBUG
 
 ModbusConnection::ModbusConnection() : connected(false), modbusContext(NULL) { }
@@ -58,6 +61,7 @@ ModbusConnection::~ModbusConnection()
 
 int ModbusConnection::configure(const char *port, int baud, char parity, int data_bit, int stop_bit)
 {
+
     int result;
     modbusContext = modbus_new_rtu(port, baud, parity, data_bit, stop_bit);
     if (modbusContext == NULL)
@@ -66,22 +70,41 @@ int ModbusConnection::configure(const char *port, int baud, char parity, int dat
         return -1;
     }
 
+    #ifdef DEBUG
+    modbus_set_debug(modbusContext, TRUE);
+    #endif
+
     std::cout << MODBUS_CONNECTION "connection initialized on port " << port << ". BAUD: " << baud << ", PARITY: " << parity << ", DATA BITS: " << data_bit << ", STOP BITS: " << stop_bit << "\n";
 
     this->port = port;
 
     #if (LIBMODBUS_VERSION_MINOR > 0)
-        result = modbus_set_response_timeout(modbusContext, 0, 500000);
+        result = modbus_set_response_timeout(modbusContext, MODBUS_TIMEOUT_SECOND, MODBUS_TIMEOUT_MICRO);
     #else
         struct timeval response_timeout;
-        response_timeout.tv_sec = 0;
-        response_timeout.tv_usec = 500000;
+        response_timeout.tv_sec = MODBUS_TIMEOUT_SECOND;
+        response_timeout.tv_usec = MODBUS_TIMEOUT_MICRO;
         result = modbus_set_response_timeout(modbusContext, &response_timeout);
     #endif
 
     if (result < 0)
     {
-        std::cout << MODBUS_CONNECTION "Error while trying to configure response timeout: " << port << ". Error: " << std::strerror(errno) << "\n";
+        std::cout << MODBUS_CONNECTION "Error while trying to configure response timeout. Error: " << std::strerror(errno) << "\n";
+        return -1;
+    }
+
+    #if (LIBMODBUS_VERSION_MINOR > 0)
+        result = modbus_set_indication_timeout(modbusContext, MODBUS_TIMEOUT_SECOND, MODBUS_TIMEOUT_MICRO);
+    #else
+        struct timeval response_timeout;
+        response_timeout.tv_sec = MODBUS_TIMEOUT_SECOND;
+        response_timeout.tv_usec = MODBUS_TIMEOUT_MICRO;
+        result = modbus_set_indication_timeout(modbusContext, &response_timeout);
+    #endif
+
+    if (result < 0)
+    {
+        std::cout << MODBUS_CONNECTION "Error while trying to configure indication timeout. Error: " << std::strerror(errno) << "\n";
         return -1;
     }
 
@@ -103,10 +126,6 @@ int ModbusConnection::connect()
         return result;
     }
 
-    #ifdef DEBUG
-    modbus_set_debug(modbusContext, TRUE);
-    #endif
-
     std::cout << MODBUS_CONNECTION "Successfully connected\n";
     
     connected = true;
@@ -119,7 +138,7 @@ void ModbusConnection::disconnect()
     connected = true;
 }
 
-int ModbusConnection::setSlaveId(int slaveId)
+inline int ModbusConnection::setSlaveId(int slaveId)
 {
     int result;
 
@@ -154,17 +173,75 @@ int ModbusConnection::reply(int slaveId, uint8_t* modbusRequest, int modbusReque
     return result;
 }
 
-// int ModbusConnection::read(int slaveId, int address, int size, uint16_t* value)
-// {
-//     return setSlaveId(slaveId) || modbus_read_registers(modbusContext, 0, size, value);
-// }
+int ModbusConnection::readBits(int slaveId, int address, int size, uint8_t* data)
+{
+    int result;
+    connectionLock.lock();
+    result = setSlaveId(slaveId) || modbus_read_bits(modbusContext, address, size, data);
+    connectionLock.unlock();
+    return result;
+}
 
-// int ModbusConnection::write(int slaveId, int address, uint16_t value)
-// {
-//     return setSlaveId(slaveId) || modbus_write_register(modbusContext, address, value);
-// }
 
-// int ModbusConnection::write(int slaveId, int address, int size, uint16_t* data)
-// {
-//     return setSlaveId(slaveId) || modbus_write_registers(modbusContext, address, size, data);
-// }
+int ModbusConnection::readInputBits(int slaveId, int address, int size, uint8_t* data)
+{
+    int result;
+    connectionLock.lock();
+    result = setSlaveId(slaveId) || modbus_read_input_bits(modbusContext, address, size, data);
+    connectionLock.unlock();
+    return result;
+}
+
+int ModbusConnection::readRegisters(int slaveId, int address, int size, uint16_t* data)
+{
+    int result;
+    connectionLock.lock();
+    result = setSlaveId(slaveId) || modbus_read_registers(modbusContext, address, size, data);
+    connectionLock.unlock();
+    return result;
+}
+
+int ModbusConnection::readInputRegisters(int slaveId, int address, int size, uint16_t* data)
+{
+    int result;
+    connectionLock.lock();
+    result = setSlaveId(slaveId) || modbus_read_input_registers(modbusContext, address, size, data);
+    connectionLock.unlock();
+    return result;
+}
+
+int ModbusConnection::writeBit(int slaveId, int address, int value)
+{
+    int result;
+    connectionLock.lock();
+    result = setSlaveId(slaveId) || modbus_write_bit(modbusContext, address, value);
+    connectionLock.unlock();
+    return result;
+}
+
+int ModbusConnection::writeBits(int slaveId, int address, int size, uint8_t* values)
+{
+    int result;
+    connectionLock.lock();
+    result = setSlaveId(slaveId) || modbus_write_bits(modbusContext, address, size, values);
+    connectionLock.unlock();
+    return result;
+}
+
+int ModbusConnection::writeRegister(int slaveId, int address, uint16_t value)
+{
+    int result;
+    connectionLock.lock();
+    result = setSlaveId(slaveId) || modbus_write_register(modbusContext, address, value);
+    connectionLock.unlock();
+    return result;
+}
+
+int ModbusConnection::writeRegisters(int slaveId, int address, int size, uint16_t* values)
+{
+    int result;
+    connectionLock.lock();
+    result = setSlaveId(slaveId) || modbus_write_registers(modbusContext, address, size, values);
+    connectionLock.unlock();
+    return result;
+}

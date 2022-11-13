@@ -1,5 +1,5 @@
 /*
- * File: GardenBed.cpp
+ * File: GardenBedClient.cpp
  * Project: gardener
  * Created Date: Thursday October 20th 2022
  * Author: Kyle Hofer
@@ -29,57 +29,57 @@
  * HISTORY:
  */
 
-#include "GardenBed.h"
+#include "GardenBedClient.h"
 #include "GardenBedCommon.h"
 #include <iostream>
+
+using namespace GardenBed;
 
 #define LIGHT_HIGH 45
 #define LIGHT_LOW 0
 
 // This is a delay to prevent polling/writing at too high of a frequency
 // This is chosen purely from testing and hasn't yet been chosen by calculations
-#define EXECUTE_TIME 200
+#define POLL_TIME 500
 #define GARDEN_BED "Garden Bed: " <<
 
-GardenBed::GardenBed() : ModbusDevice() {};
-GardenBed::GardenBed(ModbusConnection* connection) : ModbusDevice(connection, MODBUS_ID, modbus_mapping_new(0, 0, 0, TOTAL_HOLDING_REGISTERS)) {};
+GardenBedClient::GardenBedClient() : ModbusClient() {};
+GardenBedClient::GardenBedClient(ModbusConnection* connection) : ModbusClient(connection, MODBUS_ID) {};
 
-int32_t GardenBed::doExecute()
+int32_t GardenBedClient::doExecute()
 {
-    int request_result;
+    uint16_t holdingRegisters[TOTAL_HOLDING_REGISTERS];
+    
+    int result;
 
-    request_result = request();
+    result = readRegisters(MODBUS_START_REGISTER, TOTAL_HOLDING_REGISTERS, holdingRegisters);
 
-    if (request_result < 0)
+    if (result < 0)
     {
-        // TODO: Error
+        // return POLL_TIME;
     }
 
-    if (request_result > 0)
+    std::this_thread::sleep_for(std::chrono::milliseconds(POLL_TIME));
+
+    time_t current_time = time(NULL);
+    struct tm local_time = *localtime(&current_time);
+
+    if ( // Make Time Range Configurable
+        (local_time.tm_hour > 20 || (local_time.tm_hour == 20 && local_time.tm_min >= 00)) && 
+        (local_time.tm_hour < 22 || (local_time.tm_hour == 22 && local_time.tm_min < 00))
+    )
     {
-        time_t current_time = time(NULL);
-        struct tm local_time = *localtime(&current_time);
-        uint16_t* holdingRegisters = getHoldingRegisters();
-
-        if ( // Make Time Range Configurable
-            (local_time.tm_hour > 20 || (local_time.tm_hour == 20 && local_time.tm_min >= 00)) && 
-            (local_time.tm_hour < 22 || (local_time.tm_hour == 22 && local_time.tm_min < 00))
-        )
+        if (holdingRegisters[GARDEN_LIGHT_COMMAND] != LIGHT_HIGH)
         {
-            if (holdingRegisters[GARDEN_LIGHT_COMMAND] != LIGHT_HIGH)
-            {
-                holdingRegisters[GARDEN_LIGHT_COMMAND] = LIGHT_HIGH;
-                std::cout << GARDEN_BED "sunset activated, setting expected intensity to " << LIGHT_HIGH << "\%\n";
-            }
+            writeRegister(GARDEN_LIGHT_COMMAND + MODBUS_START_REGISTER, LIGHT_HIGH);
+            std::cout << GARDEN_BED "sunset activated, setting expected intensity to " << LIGHT_HIGH << "\%\n";
         }
-        else if (holdingRegisters[GARDEN_LIGHT_COMMAND] != LIGHT_LOW)
-        {
-            holdingRegisters[GARDEN_LIGHT_COMMAND] = LIGHT_LOW;
-            std::cout << GARDEN_BED "Saving power, setting expected intensity to " << LIGHT_LOW << "\%\n";
-        }
-
-        reply();
+    }
+    else if (holdingRegisters[GARDEN_LIGHT_COMMAND] != LIGHT_LOW)
+    {
+        writeRegister(GARDEN_LIGHT_COMMAND + MODBUS_START_REGISTER, LIGHT_LOW);
+        std::cout << GARDEN_BED "Saving power, setting expected intensity to " << LIGHT_LOW << "\%\n";
     }
 
-    return EXECUTE_TIME;
+    return POLL_TIME;
 }

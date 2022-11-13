@@ -1,7 +1,7 @@
 /*
- * File: GardenBed.h
+ * File: GardenShedCommon.h
  * Project: gardener
- * Created Date: Thursday October 20th 2022
+ * Created Date: Saturday November 12th 2022
  * Author: Kyle Hofer
  * 
  * MIT License
@@ -29,25 +29,46 @@
  * HISTORY:
  */
 
-#ifndef GARDENBED
-#define GARDENBED
+#ifndef GARDENSHEDCOMMON
+#define GARDENSHEDCOMMON
 
-#include "ModbusDevice.h"
-#include "Executor.h"
+#include <ModbusUtils.h>
 
-class GardenBed : ModbusDevice, Executor
+namespace GardenShed
 {
-    private:
-    protected:
-        int32_t doExecute();
-    public:
-        GardenBed();
-        GardenBed(ModbusConnection* connection);
-        using ModbusDevice::getHoldingRegisters;
-        using ModbusDevice::request;
-        using ModbusDevice::reply;
-        using Executor::execute;
-        using Executor::executeSync;
+
+// Starting register id
+#define MODBUS_START_REGISTER 0
+#define MODBUS_ID 3
+
+enum MODBUS_INPUT_REGISTERS {
+    DOUBLE_REGISTER_VALUE(VICTRON_VOLTAGE, MODBUS_START_REGISTER),
+    DOUBLE_REGISTER(VICTRON_PANEL_VOLTAGE),
+    VICTRON_CURRENT,
+    VICTRON_PANEL_POWER,
+    VICTRON_LOAD_CURRENT,
+    VICTRON_OPERATION_STATE,
+    VICTRON_ERROR_STATE,
+    VICTRON_LOAD,
+    VICTRON_YIELD_TOTAL,
+    VICTRON_YIELD_TODAY,
+    VICTRON_MAX_POWER_TODAY,
+    VICTRON_YIELD_YESTERDAY,
+    VICTRON_MAX_POWER_YESTERDAY,
+    VICTRON_TRACKER_OPERATION_MODE,
+    VICTRON_DAY_SEQUENCE,
+    VICTRON_SERIAL_NUMBER,
+    VICTRON_PRODUCT_ID,
+    VICTRON_FIRMWARE,
+    VICTRON_OFF_REASON,
+    TOTAL_INPUT_REGISTERS
 };
 
-#endif /* GARDENBED */
+enum MODBUS_HOLDING_REGISTERS {
+    SHED_LIGHT_COMMAND = MODBUS_START_REGISTER,
+    TOTAL_HOLDING_REGISTERS
+};
+
+}
+
+#endif /* GARDENSHEDCOMMON */

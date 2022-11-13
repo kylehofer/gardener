@@ -13,19 +13,16 @@
 // Misc configuration
 #define LIGHT_OUT_PIN 3
 
-enum MODBUS_HOLDING_REGISTERS {
-    GARDEN_LIGHT_COMMAND = MODBUS_START_REGISTER,
-    TOTAL_HOLDING_REGISTERS
-};
-
 ModbusSerial modbusClient;
+
+using namespace GardenBed;
 
 void setup()
 {
     pinMode(LIGHT_OUT_PIN, OUTPUT);
 
     // Config Modbus Serial (port, speed, byte format)
-    modbusClient.config(&Serial, MODBUS_BAUD_RATE, SERIAL_8N2, MAX485_ENABLE_PIN);
+    modbusClient.config(&Serial1, MODBUS_BAUD_RATE, SERIAL_8N2, MAX485_ENABLE_PIN);
     // Set the Slave ID
     modbusClient.setSlaveId(MODBUS_ID);
 
@@ -47,5 +44,5 @@ void loop()
     analogWrite(LIGHT_OUT_PIN, lightCommand);
 
     // Using delay here as it's a fairly simple sketch
-    delay(200);
+    delay(250);
 }

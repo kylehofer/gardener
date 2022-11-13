@@ -1,5 +1,5 @@
 /*
- * File: GardenShedCommon.h
+ * File: GardenShedClient.h
  * Project: gardener
  * Created Date: Saturday November 12th 2022
  * Author: Kyle Hofer
@@ -29,41 +29,26 @@
  * HISTORY:
  */
 
-#ifndef GARDENSHEDCOMMON
-#define GARDENSHEDCOMMON
+#ifndef GARDENSHED
+#define GARDENSHED
 
-#include "ModbusUtils.h"
+#include "ModbusClient.h"
+#include "Executor.h"
 
-// Starting register id
-#define MODBUS_START_REGISTER 0
-#define MODBUS_ID 3
-
-enum MODBUS_INPUT_REGISTERS {
-    DOUBLE_REGISTER_VALUE(VICTRON_VOLTAGE, MODBUS_START_REGISTER),
-    DOUBLE_REGISTER(VICTRON_PANEL_VOLTAGE),
-    VICTRON_CURRENT,
-    VICTRON_PANEL_POWER,
-    VICTRON_LOAD_CURRENT,
-    VICTRON_OPERATION_STATE,
-    VICTRON_ERROR_STATE,
-    VICTRON_LOAD,
-    VICTRON_YIELD_TOTAL,
-    VICTRON_YIELD_TODAY,
-    VICTRON_MAX_POWER_TODAY,
-    VICTRON_YIELD_YESTERDAY,
-    VICTRON_MAX_POWER_YESTERDAY,
-    VICTRON_TRACKER_OPERATION_MODE,
-    VICTRON_DAY_SEQUENCE,
-    VICTRON_SERIAL_NUMBER,
-    VICTRON_PRODUCT_ID,
-    VICTRON_FIRMWARE,
-    VICTRON_OFF_REASON,
-    TOTAL_INPUT_REGISTERS
+class GardenShedClient : ModbusClient, Executor
+{
+    private:
+    protected:
+        int32_t doExecute();
+        using ModbusClient::readInputRegisters;
+        using ModbusClient::readRegisters;
+        using ModbusClient::writeRegister;
+        using ModbusClient::writeRegisters;
+    public:
+        GardenShedClient();
+        GardenShedClient(ModbusConnection* connection);
+        using Executor::execute;
+        using Executor::executeSync;
 };
 
-enum MODBUS_HOLDING_REGISTERS {
-    SHED_LIGHT_COMMAND = MODBUS_START_REGISTER,
-    TOTAL_HOLDING_REGISTERS
-};
-
-#endif /* GARDENSHEDCOMMON */
+#endif /* GARDENSHED */

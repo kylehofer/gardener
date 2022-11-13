@@ -1,5 +1,5 @@
 /*
- * File: ModbusDevice.h
+ * File: ModbusServer.h
  * Project: gardener
  * Created Date: Thursday October 20th 2022
  * Author: Kyle Hofer
@@ -28,53 +28,23 @@
  * 
  * HISTORY:
  */
-
-#ifndef MODBUSDEVICE
-#define MODBUSDEVICE
+#ifndef MODBUSSERVER
+#define MODBUSSERVER
 
 #include <modbus.h>
 #include "ModbusConnection.h"
 
-class ModbusDevice
+class ModbusServer
 {
 private:
     ModbusConnection* connection;
     int32_t pollDelay;
     int slaveId;
     modbus_mapping_t *modbusMapping;
-    uint8_t modbusRequest[MODBUS_TCP_MAX_ADU_LENGTH];
+    uint8_t modbusRequest[MODBUS_RTU_MAX_ADU_LENGTH];
     int modbusRequestResult;
 
 protected:
-    // /**
-    //  * @brief Attempt to read data for the device
-    //  * 
-    //  * @param address 
-    //  * @param size 
-    //  * @param value 
-    //  * @return int 
-    //  */
-    // int read(int address, int size, uint16_t* value);
-
-    // /**
-    //  * @brief Attempt to write a byte data to the device
-    //  * 
-    //  * @param address 
-    //  * @param value 
-    //  * @return int 
-    //  */
-    // int write(int address, uint16_t value);
-    
-    // /**
-    //  * @brief Attempt to write bytes of data to the device
-    //  * 
-    //  * @param address 
-    //  * @param size 
-    //  * @param value 
-    //  * @return int 
-    //  */
-    // int write(int address, int size, uint16_t* value);
-
     int request();
     int reply();
 
@@ -83,8 +53,10 @@ protected:
     uint16_t* getInputRegisters();
     uint16_t* getHoldingRegisters();
 public:
-    ModbusDevice();
-    ModbusDevice(ModbusConnection* connection, int slaveId, modbus_mapping_t* modbusMapping);
+    ModbusServer();
+    ModbusServer(ModbusConnection* connection, int slaveId, modbus_mapping_t* modbusMapping);
+    ~ModbusServer();
+    
     /**
      * @brief Set the Connection
      * 

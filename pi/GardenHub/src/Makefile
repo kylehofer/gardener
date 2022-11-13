@@ -1,10 +1,11 @@
-TARGET=gardener
+TARGET=GardenHub
 OUT_DIR=../build/src
 SRC_DIR=.
 INCLUDE_DIR=../include
-GARDEN_BED_INCLUDE_DIR=../../GardenBed/include
-GARDEN_SHED_INCLUDE_DIR=../../GardenShed/include
-GARDEN_LIBRARY_INCLUDE_DIR=../../GardenLibrary/include
+ROOT_PROJ=../../..
+GARDEN_BED_INCLUDE_DIR=${ROOT_PROJ}/arduino/GardenBed/include
+GARDEN_SHED_INCLUDE_DIR=${ROOT_PROJ}/arduino/GardenShed/include
+GARDEN_LIBRARY_INCLUDE_DIR=${ROOT_PROJ}/lib/GardenLibrary/include
 INSTALL_DIR=/usr/bin
 
 PKGCONFIG = $(shell which pkg-config)

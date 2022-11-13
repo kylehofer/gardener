@@ -1,5 +1,5 @@
 /*
- * File: GardenShed.cpp
+ * File: GardenShedClient.cpp
  * Project: gardener
  * Created Date: Saturday November 12th 2022
  * Author: Kyle Hofer
@@ -29,43 +29,53 @@
  * HISTORY:
  */
 
-#include "GardenShed.h"
+#include "GardenShedClient.h"
 #include "GardenShedCommon.h"
 #include <iostream>
+
+using namespace GardenShed;
 
 #define LIGHT_HIGH 15
 #define LIGHT_LOW 0
 
 // This is a delay to prevent polling/writing at too high of a frequency
 // This is chosen purely from testing and hasn't yet been chosen by calculations
-#define EXECUTE_TIME 200
+#define POLL_TIME 500
 #define GARDEN_SHED "Garden Shed: " <<
 
-GardenShed::GardenShed() : ModbusDevice() {};
-GardenShed::GardenShed(ModbusConnection* connection) : ModbusDevice(connection, MODBUS_ID, modbus_mapping_new(0, 0, TOTAL_INPUT_REGISTERS, TOTAL_HOLDING_REGISTERS)) {};
+GardenShedClient::GardenShedClient() : ModbusClient() {};
+GardenShedClient::GardenShedClient(ModbusConnection* connection) : ModbusClient(connection, MODBUS_ID) {};
 
-int32_t GardenShed::doExecute()
+int32_t GardenShedClient::doExecute()
 {
-    int request_result;
+    uint16_t registers[TOTAL_HOLDING_REGISTERS];
+    uint16_t inputRegisters[TOTAL_INPUT_REGISTERS];
+    
+    int result;
 
-    request_result = request();
+    result = readInputRegisters(MODBUS_START_REGISTER, TOTAL_INPUT_REGISTERS, inputRegisters);
 
-    if (request_result < 0)
+    if (result < 0)
     {
-        // TODO: Error
+        // return POLL_TIME;
     }
 
-    if (request_result > 0)
+    std::this_thread::sleep_for(std::chrono::milliseconds(POLL_TIME));
+
+
+    result = readRegisters(MODBUS_START_REGISTER, TOTAL_HOLDING_REGISTERS, registers);
+
+    if (result < 0)
     {
-        uint16_t* holdingRegisters = getHoldingRegisters();
-
-        if (holdingRegisters[SHED_LIGHT_COMMAND] != LIGHT_HIGH)
-        {
-            holdingRegisters[SHED_LIGHT_COMMAND] = LIGHT_HIGH;
-        }
-
-        reply();
+        // return POLL_TIME;
     }
 
-    return EXECUTE_TIME;
+    std::this_thread::sleep_for(std::chrono::milliseconds(POLL_TIME));
+
+    if (registers[SHED_LIGHT_COMMAND] != LIGHT_HIGH)
+    {
+        writeRegister(SHED_LIGHT_COMMAND + MODBUS_START_REGISTER, LIGHT_HIGH);
+    }
+
+    return POLL_TIME;
 }

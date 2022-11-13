@@ -1,7 +1,7 @@
 /*
- * File: GardenShed.h
+ * File: ModbusClient.h
  * Project: gardener
- * Created Date: Saturday November 12th 2022
+ * Created Date: Thursday October 20th 2022
  * Author: Kyle Hofer
  * 
  * MIT License
@@ -29,25 +29,35 @@
  * HISTORY:
  */
 
-#ifndef GARDENSHED
-#define GARDENSHED
+#ifndef MODBUSCLIENT
+#define MODBUSCLIENT
 
+#include <modbus.h>
+#include "ModbusClient.h"
 #include "ModbusDevice.h"
-#include "Executor.h"
+#include "ModbusConnection.h"
 
-class GardenShed : ModbusDevice, Executor
+enum ModbusClientState
 {
-    private:
-    protected:
-        int32_t doExecute();
-    public:
-        GardenShed();
-        GardenShed(ModbusConnection* connection);
-        using ModbusDevice::getHoldingRegisters;
-        using ModbusDevice::request;
-        using ModbusDevice::reply;
-        using Executor::execute;
-        using Executor::executeSync;
+    POLLED, WRITTEN, IDLE
 };
 
-#endif /* GARDENSHED */
+class ModbusClient : ModbusDevice
+{
+private:
+    ModbusClientState state;
+protected:
+    int readBits(int address, int size, uint8_t* data);
+    int readInputBits(int address, int size, uint8_t* data);
+    int readRegisters(int address, int size, uint16_t* data);
+    int readInputRegisters(int address, int size, uint16_t* data);
+    int writeBit(int address, int value);
+    int writeBits(int address, int size, uint8_t* values);
+    int writeRegister(int address, uint16_t value);
+    int writeRegisters(int address, int size, uint16_t* values);
+public:
+    ModbusClient();
+    ModbusClient(ModbusConnection* connection, int slaveId);
+};
+
+#endif /* MODBUSDEVICE */
