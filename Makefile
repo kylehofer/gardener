@@ -1,16 +1,5 @@
-all: src tests
 
-src:
-	make -C ./src
-
-tests:
-	make -C ./tests
+EXCLUDE=--exclude='build/' --exclude='.git/' --exclude='temp/' --exclude='.envrc' --exclude='.pio' --exclude='.vscode' 
 
 copy:
-	 sshpass -p $(PASSWORD) rsync -rav -e ssh --exclude='build/' --exclude='.git/' --exclude='temp/' ./ $(USER)@$(HOST):$(TARGET)
-
-clean:
-	make clean -C ./src
-	make clean -C ./tests
-
-.PHONY: all tests clean src
+	 sshpass -p $(PASSWORD) rsync -rav ${EXCLUDE} -e ssh ./ $(USER)@$(HOST):$(TARGET)
